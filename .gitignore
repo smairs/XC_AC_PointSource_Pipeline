@@ -127,3 +127,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# sdf files in case any find their way into the directory
+*.sdf
