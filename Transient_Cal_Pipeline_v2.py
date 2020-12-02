@@ -1,11 +1,12 @@
 from jcmt_transient_alignment.HighMass_data_gen_EAO import make_data_dict
 from jcmt_transient_alignment.HighMass_table_gen_EAO import make_table
 from jcmt_transient_alignment.create_makemap_script import make_pcor, makemap_infiles, create_makemap_script
+from point_source_cal.make_coaddds_metadata_tables import make_coadds_metadata
 import subprocess
 
 regions_to_run = ['DR21C']
 datadirs       = ['DR21C']
-wave = '450'
+wave = '850'
 XC_alignment_iterations = 1
 
 # We may wish to run the cross correlation technique to align the images multiple times
@@ -27,8 +28,8 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # flux cal values.
 
     if alignment_iteration == 0:
-        make_data_dict(regions=regions_to_run,datadirs=datadirs,alignment_iteration=alignment_iteration)
-        make_table(regions_to_run,alignment_iteration=alignment_iteration)
+        make_data_dict(regions=regions_to_run,datadirs=datadirs,alignment_iteration=alignment_iteration,wavelength=wave)
+        make_table(regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
     
     # If the aligment has previously been run in iteration 0 - we need
     # to point to the already aligned data! So here, datadirs points
@@ -36,8 +37,8 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # Keep track of the tables by alignment number.
 
     else:
-        make_data_dict(regions=regions_to_run,datadirs=[eachregion + '_XCalign_'+str(alignment_iteration_number-1) for eachregion in regions_to_run],alignment_iteration=alignment_iteration)
-        make_table(regions=regions_to_run,alignment_iteration=alignment_iteration)
+        make_data_dict(regions=regions_to_run,datadirs=[eachregion + '_XCalign_'+str(alignment_iteration_number-1) for eachregion in regions_to_run],alignment_iteration=alignment_iteration,wavelength=wave)
+        make_table(regions=regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
 
 
     ######################################
@@ -60,14 +61,14 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # Remove all the intermediate files
 
     for eachregion in regions_to_run:
-        make_pcor("tables/HM_"+eachregion+"_run_"+str(alignment_iteration)+".table")
-        makemap_infiles("tables/HM_"+eachregion+"_run_"+str(alignment_iteration)+".table",eachregion,wave)
+        make_pcor("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table")
+        makemap_infiles("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table",eachregion,wave)
         create_makemap_script(wave)
         subprocess.call('makemaps.sh',shell=True)
         if not os.path.exists(eachregion+'_XCalign_'+str(alignment_iteration_number)):
             os.system('mkdir '+eachregion+'_XCalign_'+str(alignment_iteration_number))
         # Apply the relative FCF correction using kappa
-        apply_relFCF_AC("tables/HM_"+eachregion+"_run_"+str(alignment_iteration)+".table",wave)
+        apply_relFCF_AC("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table",wave)
         # Move the newly aligned and flux calibrated files to their own directory
         os.system('mv *CR3_relcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration_number))
         # Remove the intermediate files
@@ -83,6 +84,9 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
 #Once config directory is set up and protocat/diskcat are int he right place....
 #Run:
 #make_coadds_metadata_tables.py
+
+for eachregion in regions_to_run
+    make_coadds_metadata(region,wave)
 
 # This will give all the files necessary to run make*plottogether*py which uses getfamily
 # Then I will get family members, FCFs, FCFuncs, etc. 
