@@ -67,7 +67,7 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
         if not os.path.exists(eachregion+'_XCalign_'+str(alignment_iteration_number)):
             os.system('mkdir '+eachregion+'_XCalign_'+str(alignment_iteration_number))
         # Apply the relative FCF correction using kappa
-
+        apply_relFCF_AC("tables/HM_"+eachregion+"_run_"+str(alignment_iteration)+".table",wave)
         # Move the newly aligned and flux calibrated files to their own directory
         os.system('mv *CR3_relcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration_number))
         # Remove the intermediate files
@@ -79,4 +79,13 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
 # variables and improve the original correction. At the same time,
 # we can get the alignment factors based on the localised method
 # to test the cross correlation alignement went smoothly
+
+#Once config directory is set up and protocat/diskcat are int he right place....
+#Run:
+#make_coadds_metadata_tables.py
+
+# This will give all the files necessary to run make*plottogether*py which uses getfamily
+# Then I will get family members, FCFs, FCFuncs, etc. 
+# Apply to the data.
+# Find a way to run alignment as well to check Colton's Results
 
