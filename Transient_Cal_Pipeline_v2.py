@@ -1,8 +1,11 @@
 from jcmt_transient_alignment.HighMass_data_gen_EAO import make_data_dict
 from jcmt_transient_alignment.HighMass_table_gen_EAO import make_table
 from jcmt_transient_alignment.create_makemap_script import make_pcor, makemap_infiles, create_makemap_script
-from point_source_cal.make_coaddds_metadata_tables import make_coadds_metadata
+from jcmt_transient_alignment.applycal import apply_relFCF_AC
+from point_source_cal.make_coadds_metadata_tables import make_coadds_metadata
 import subprocess
+import os
+import numpy as np
 
 regions_to_run = ['DR21C']
 datadirs       = ['DR21C']
@@ -37,7 +40,7 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # Keep track of the tables by alignment number.
 
     else:
-        make_data_dict(regions=regions_to_run,datadirs=[eachregion + '_XCalign_'+str(alignment_iteration_number-1) for eachregion in regions_to_run],alignment_iteration=alignment_iteration,wavelength=wave)
+        make_data_dict(regions=regions_to_run,datadirs=[eachregion + '_XCalign_'+str(alignment_iteration-1) for eachregion in regions_to_run],alignment_iteration=alignment_iteration,wavelength=wave)
         make_table(regions=regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
 
 
@@ -60,19 +63,26 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # Run makemap
     # Remove all the intermediate files
 
-    for eachregion in regions_to_run:
+    for eachregion,eachdatadir in zip(regions_to_run,datadirs):
+        if not os.path.exists(eachregion+'_XCalign_'+str(alignment_iteration)):
+            os.system('mkdir '+eachregion+'_XCalign_'+str(alignment_iteration))
         make_pcor("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table")
-        makemap_infiles("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table",eachregion,wave)
+        makemap_infiles(eachregion,wave)
         create_makemap_script(wave)
         subprocess.call('makemaps.sh',shell=True)
-        if not os.path.exists(eachregion+'_XCalign_'+str(alignment_iteration_number)):
-            os.system('mkdir '+eachregion+'_XCalign_'+str(alignment_iteration_number))
+        if alignment_iteration == 0:
+            firstfile = sorted(glob.glob(eachdatadir+'/*'+wave+'ER3.sdf'))[0]
+            newname = firstfile.split('/')[-1].split('_ER3.sdf')[0]+'_CR3_crop.sdf'
+        else:
+            firstfile = sorted(glob.glob(eachregion+'_XCalign_'+str(alignment_iteration)+'/*'+wave+'CR3_crop.sdf'))[0]
+            newname   = firstfile.split('/')[-1]
+        os.system('cp '+firstfile+' ./'+newname)
         # Apply the relative FCF correction using kappa
         apply_relFCF_AC("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table",wave)
         # Move the newly aligned and flux calibrated files to their own directory
-        os.system('mv *CR3_relcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration_number))
+        os.system('mv *CR3_ACcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration))
         # Remove the intermediate files
-        os.system('rm -f *pcor.txt  makemaps.sh *_'+wave+'.txt')
+        os.system('rm -f *pcor.txt  makemaps.sh *_'+wave+'.txt *_cal.sdf')
         
 
 # Now, with the new files, run the localised point source method of
