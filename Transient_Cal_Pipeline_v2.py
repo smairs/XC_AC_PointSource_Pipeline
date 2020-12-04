@@ -6,6 +6,7 @@ from point_source_cal.make_coadds_metadata_tables import make_coadds_metadata
 import subprocess
 import os
 import numpy as np
+import glob
 
 regions_to_run = ['DR21C']
 datadirs       = ['DR21C']
@@ -71,18 +72,18 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
         create_makemap_script(wave)
         subprocess.call('makemaps.sh',shell=True)
         if alignment_iteration == 0:
-            firstfile = sorted(glob.glob(eachdatadir+'/*'+wave+'ER3.sdf'))[0]
-            newname = firstfile.split('/')[-1].split('_ER3.sdf')[0]+'_CR3_crop.sdf'
+            firstfile = sorted(glob.glob(eachdatadir+'/*'+wave+'_ER3.sdf'))[0]
+            newname = firstfile.split('/')[-1].split('_ER3.sdf')[0]+'_CR3.sdf'
         else:
-            firstfile = sorted(glob.glob(eachregion+'_XCalign_'+str(alignment_iteration)+'/*'+wave+'CR3_crop.sdf'))[0]
-            newname   = firstfile.split('/')[-1]
+            firstfile = sorted(glob.glob(eachregion+'_XCalign_'+str(alignment_iteration-1)+'/*'+wave+'_CR3_ACcal.sdf'))[0]
+            newname   = firstfile.split('/')[-1].split('_ACcal.sdf')[0]+'.sdf'
         os.system('cp '+firstfile+' ./'+newname)
         # Apply the relative FCF correction using kappa
         apply_relFCF_AC("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table",wave)
         # Move the newly aligned and flux calibrated files to their own directory
         os.system('mv *CR3_ACcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration))
         # Remove the intermediate files
-        os.system('rm -f *pcor.txt  makemaps.sh *_'+wave+'.txt *_cal.sdf')
+        os.system('rm -f *pcor.txt  makemaps.sh *_'+wave+'.txt *_CR3.sdf')
         
 
 # Now, with the new files, run the localised point source method of
