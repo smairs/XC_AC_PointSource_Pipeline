@@ -5,6 +5,7 @@ from jcmt_transient_alignment.applycal import apply_relFCF_AC
 from point_source_cal.make_coadds_metadata_tables import make_coadds_metadata
 from point_source_cal.noisefunctions import make_noise_file
 from point_source_cal.smooth_input_data import smooth_input_data
+from point_source_cal.changeunits import changeunits
 from point_source_cal.make_FCFunc_vs_sourceSNR_plots_binsof1_plottogether import make_FCFunc_family_plots
 import subprocess
 import os
@@ -120,6 +121,10 @@ for eachregion in regions_to_run:
     # we can get the alignment factors based on the localised method
     # to test the cross correlation alignement went smoothly
     
+    # Change data units to mJy/bm
+
+    changeunits(most_recent_XC,wave) 
+
     # Smooth all the data!
 
     smooth_input_data(most_recent_XC,wave)   
@@ -128,16 +133,18 @@ for eachregion in regions_to_run:
 
     # Generate noises_wave.txt
    
-    make_noise_file(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf'))) 
+    make_noise_file(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')),wave) 
     
     # This will give all the files necessary to run make*plottogether*py which uses getfamily
     # and will generate FCF unc family plots as well as a dictionary of datescans and Rel FCFS
     # -- the dictionary will also include the family member IDs
 
-    make_ 
+    make_FCFunc_family_plots([eachregion],wave)
 
-    # Then I will get family members, FCFs, FCFuncs, etc. 
     # Apply to the data.
+    
+    
+
     # Find a way to run alignment as well to check Colton's Results
 
     
