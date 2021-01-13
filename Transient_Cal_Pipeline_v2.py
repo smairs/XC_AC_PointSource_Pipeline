@@ -74,7 +74,7 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
         make_pcor("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table")
         makemap_infiles(eachregion,wave)
         create_makemap_script(wave)
-        subprocess.call('makemaps.sh',shell=True)
+        subprocess.call('sh ./makemaps.sh',shell=True)
         if alignment_iteration == 0:
             firstfile = sorted(glob.glob(eachdatadir+'/*'+wave+'_ER3.sdf'))[0]
             newname = firstfile.split('/')[-1].split('_ER3.sdf')[0]+'_CR3.sdf'
