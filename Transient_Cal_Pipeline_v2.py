@@ -6,6 +6,7 @@ from point_source_cal.make_coadds_metadata_tables import make_coadds_metadata
 from point_source_cal.noisefunctions import make_noise_file
 from point_source_cal.smooth_input_data import smooth_input_data
 from point_source_cal.changeunits import changeunits
+from point_source_cal.applyPScal import applyPScal
 from point_source_cal.make_FCFunc_vs_sourceSNR_plots_binsof1_plottogether import make_FCFunc_family_plots
 import subprocess
 import os
@@ -14,8 +15,9 @@ import glob
 
 regions_to_run = ['DR21C']
 datadirs       = ['DR21C']
-wave = '850'
-XC_alignment_iterations = 1
+wave = '450'
+XC_alignment_iterations = 3
+target_uncertainties = [0.05]  # [0.05] means 5% target uncertainty -- keep it here for now, nothing else will work without manual updates
 
 # We may wish to run the cross correlation technique to align the images multiple times
 # so this loop works for 1 or more iterations of Colton's codes.
@@ -139,12 +141,12 @@ for eachregion in regions_to_run:
     # and will generate FCF unc family plots as well as a dictionary of datescans and Rel FCFS
     # -- the dictionary will also include the family member IDs
 
-    make_FCFunc_family_plots([eachregion],wave)
+    make_FCFunc_family_plots([eachregion],wave,target_uncertainties) 
 
     # Apply to the data.
-    
-    
 
-    # Find a way to run alignment as well to check Colton's Results
+    applyPScal(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')),wave,target_uncertainties)
+
+    # Find a way to run alignment as well to check Colton's Results?
 
     
