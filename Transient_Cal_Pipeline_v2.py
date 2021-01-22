@@ -8,6 +8,8 @@ from point_source_cal.smooth_input_data import smooth_input_data
 from point_source_cal.changeunits import changeunits
 from point_source_cal.applyPScal import applyPScal
 from point_source_cal.make_FCFunc_vs_sourceSNR_plots_binsof1_plottogether import make_FCFunc_family_plots
+from transientclumps.pointing_check import pointing_check
+from transientclumps.GCfluxcal import GCfluxcal
 import subprocess
 import os
 import numpy as np
@@ -16,13 +18,28 @@ import glob
 regions_to_run = ['DR21C']
 datadirs       = ['DR21C']
 wave = '450'
-XC_alignment_iterations = 3
+XC_alignment_iterations = 3 #This parameter only matters if running the 850 micron pipeline.
 target_uncertainties = [0.05]  # [0.05] means 5% target uncertainty -- keep it here for now, nothing else will work without manual updates
 
 # We may wish to run the cross correlation technique to align the images multiple times
-# so this loop works for 1 or more iterations of Colton's codes.
+# so this loop works for 1 or more iterations of Colton's codes - but we only need to iterate
+# 850 microns! For 450 microns, we will just take the most recent pointing solution -- that is
+# what the first part of this code does. So make sure 850 is run before 450!
 
-for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
+if wave == '450':
+
+    # Check if 850 micron tables already exist for this region
+    for eachregion in regions_to_run:
+        if len(glob.glob("tables/Transient_"+eachregion+"_run_*_850.table")) > 0:
+            best_850_correction_table = sorted(glob.glob("tables/Transient_"+eachregion+"_run_*_850.table"))[-1]
+            iteration_loop = [int(best_850_correction_table.split('_')[-2])]
+        else:
+            raise Exception('This pipeline must first be run on 850 micron data in order to find the pointing offsets to apply to the 450 micron data. The pointing offsets are derived from whichever tables/Transient_'+eachregion+'_run_*_850.table file has the highest "run" number since the solution converges at higher numbers of iterations.')
+
+if wave == '850':
+    iteration_loop = np.arange(0,XC_alignment_iterations,1)
+
+for alignment_iteration in iteration_loop:
 
     ######################################
     ######################################
@@ -37,20 +54,26 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # The XC and AC fits - effectively giving us the first alignment and relative 
     # flux cal values.
 
-    if alignment_iteration == 0:
-        make_data_dict(regions=regions_to_run,datadirs=datadirs,alignment_iteration=alignment_iteration,wavelength=wave)
-        make_table(regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
-    
-    # If the aligment has previously been run in iteration 0 - we need
-    # to point to the already aligned data! So here, datadirs points
-    # to the CR3 files produced on the first iteration. We also
-    # Keep track of the tables by alignment number.
 
-    else:
-        make_data_dict(regions=regions_to_run,datadirs=[eachregion + '_XCalign_'+str(alignment_iteration-1) for eachregion in regions_to_run],alignment_iteration=alignment_iteration,wavelength=wave)
-        make_table(regions=regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
+    if wave == '850':
+        if alignment_iteration == 0:
+            make_data_dict(regions=regions_to_run,datadirs=datadirs,alignment_iteration=alignment_iteration,wavelength=wave)
+            make_table(regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
 
+        # If the aligment has previously been run in iteration 0 - we need
+        # to point to the already aligned data! So here, datadirs points
+        # to the CR3 files produced on the first iteration. We also
+        # Keep track of the tables by alignment number.
 
+        else:
+            make_data_dict(regions=regions_to_run,datadirs=[eachregion + '_XCalign_'+str(alignment_iteration) for eachregion in regions_to_run],alignment_iteration=alignment_iteration,wavelength=wave)
+            make_table(regions=regions_to_run,alignment_iteration=alignment_iteration,wavelength=wave)
+
+    if wave  == '450':
+        make_data_dict(regions=regions_to_run,datadirs=datadirs,alignment_iteration=0,wavelength=wave)
+        make_table(regions_to_run,alignment_iteration=0,wavelength=wave)
+
+ 
     ######################################
     ######################################
     ######################################
@@ -71,23 +94,34 @@ for alignment_iteration in np.arange(0,XC_alignment_iterations,1):
     # Remove all the intermediate files
 
     for eachregion,eachdatadir in zip(regions_to_run,datadirs):
-        if not os.path.exists(eachregion+'_XCalign_'+str(alignment_iteration)):
-            os.system('mkdir '+eachregion+'_XCalign_'+str(alignment_iteration))
+        if wave == '850':
+            if not os.path.exists(eachregion+'_XCalign_'+str(alignment_iteration+1)):
+                os.system('mkdir '+eachregion+'_XCalign_'+str(alignment_iteration+1))
+        # In the line below, if a 450 catalogue is supplied to make_pcor, the make_pcor code will change it to 850 microns 
+        # with the same iteration number
         make_pcor("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table")
         makemap_infiles(eachregion,wave)
         create_makemap_script(wave)
         subprocess.call('sh ./makemaps.sh',shell=True)
-        if alignment_iteration == 0:
+        if wave == '850':
+            if alignment_iteration == 0:
+                firstfile = sorted(glob.glob(eachdatadir+'/*'+wave+'_ER3.sdf'))[0]
+                newname = firstfile.split('/')[-1].split('_ER3.sdf')[0]+'_CR3.sdf'
+            else:
+                firstfile = sorted(glob.glob(eachregion+'_XCalign_'+str(alignment_iteration-1)+'/*'+wave+'_CR3_ACcal.sdf'))[0]
+                newname   = firstfile.split('/')[-1].split('_ACcal.sdf')[0]+'.sdf'
+        elif wave == '450':
             firstfile = sorted(glob.glob(eachdatadir+'/*'+wave+'_ER3.sdf'))[0]
             newname = firstfile.split('/')[-1].split('_ER3.sdf')[0]+'_CR3.sdf'
-        else:
-            firstfile = sorted(glob.glob(eachregion+'_XCalign_'+str(alignment_iteration-1)+'/*'+wave+'_CR3_ACcal.sdf'))[0]
-            newname   = firstfile.split('/')[-1].split('_ACcal.sdf')[0]+'.sdf'
         os.system('cp '+firstfile+' ./'+newname)
         # Apply the relative FCF correction using kappa
         apply_relFCF_AC("tables/Transient_"+eachregion+"_run_"+str(alignment_iteration)+"_"+wave+".table",wave)
-        # Move the newly aligned and flux calibrated files to their own directory
-        os.system('mv *CR3_ACcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration))
+        if wave == '850':
+            # Move the newly aligned and flux calibrated files to their own directory
+            os.system('mv *CR3_ACcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration+1))
+        elif wave == '450':
+            # Move the newly aligned and flux calibrated files to their own directory
+            os.system('mv *CR3_ACcal.sdf '+eachregion+'_XCalign_'+str(alignment_iteration))
         # Remove the intermediate files
         os.system('rm -f *pcor.txt  makemaps.sh *_'+wave+'.txt *_CR3.sdf')
      
@@ -147,6 +181,9 @@ for eachregion in regions_to_run:
 
     applyPScal(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')),wave,target_uncertainties)
 
-    # Find a way to run alignment as well to check Colton's Results?
+    # Run local point source alignment as well to check Colton's Results
 
+    if wave == '850':
+        pointing_check(most_recent_XC,wave)
+        GCfluxcal(most_recent_XC,wave)
     
