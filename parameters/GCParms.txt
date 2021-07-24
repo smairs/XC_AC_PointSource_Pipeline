@@ -1,0 +1,30 @@
+#GaussClumps parameters for CONFIG global FindClumps parameter
+
+GaussClumps.ExtraCols = 2
+
+GaussClumps.FwhmBeam = 5
+
+GaussClumps.MaxBad = 0
+
+GaussClumps.MaxNF = 150
+
+GaussClumps.MaxSkip = 20
+
+GaussClumps.NPad = 10
+
+GaussClumps.Thresh = 10.0
+
+#Unused parameters
+#GaussClumps.Wmin = 
+#GaussClumps.Wwidth = 
+#GaussClumps.FwhmStart = 
+#GaussClumps.MaxClumps = 
+#GaussClumps.VeloRes = 
+#GaussClumps.VeloStart = 
+#GaussClumps.RMS =
+#GaussClumps.S0 = 
+#GaussClumps.Sa = 
+#GaussClumps.Sb = 
+#GaussClumps.Sc = 
+#GaussClumps.FwhmStart = 
+#GaussClumps.ModelLim = 
