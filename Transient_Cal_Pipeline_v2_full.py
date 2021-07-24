@@ -1,24 +1,22 @@
 from jcmt_transient_alignment.HighMass_data_gen_EAO_newbox import make_data_dict
 from jcmt_transient_alignment.HighMass_table_gen_EAO import make_table
 from jcmt_transient_alignment.create_makemap_script import make_pcor, makemap_infiles, create_makemap_script
-from jcmt_transient_alignment.HighMass_table_gen_EAO import make_table
-from point_source_cal.make_coadds_metadata_tables import make_coadds_metadata
-from jcmt_transient_alignment.create_makemap_script import make_pcor, makemap_infiles, create_makemap_script
 from jcmt_transient_alignment.applycal import apply_relFCF_AC
 from point_source_cal.make_coadds_metadata_tables import make_coadds_metadata
 from point_source_cal.noisefunctions import make_noise_file
 from point_source_cal.smooth_input_data import smooth_input_data
 from point_source_cal.changeunits import changeunits
 from point_source_cal.applyPScal import applyPScal
-from weightedcal.weightedcal import weighted_cal
 from point_source_cal.applyWeightedCal import applyWeightedCal
 from point_source_cal.make_FCFunc_vs_sourceSNR_plots_binsof1_plottogether import make_FCFunc_family_plots
 from point_source_cal.get_vars import get_vars
+from weightedcal.weightedcal import weighted_cal
 from transientclumps.pointing_check import pointing_check
 from transientclumps.GCfluxcal import GCfluxcal
 from bookkeeping.generate_calfactors_file import generate_calfactors_file
 from bookkeeping.make_final_lightcurves import make_final_lightcurves
 from bookkeeping.family_members import family_members
+# Can install starlink py-wrapper from: https://github.com/Starlink/starlink-pywrapper ---- or use pip install starlink-pywrapper
 from starlink import kappa
 import subprocess
 import os
