@@ -78,7 +78,7 @@ def create_makemap_script(wave):
         makemapsscript.write('    ##\n')
         makemapsscript.write('    # Run Makemap With The Pointing Correction File\n')
         makemapsscript.write('    ##\n')
-        makemapsscript.write('        cmdR1map="$STARLINK_DIR/bin/smurf/makemap in=^${region}_${thisdate}_${scan}_${thiswave}.txt out=${region}_${thisdate}_${scan}_${thiswave}_CR3.sdf ref=${region}_R3_extmask_${thiswave}.sdf config=^dimmconfig_R3.lis pixsize=$pixsize pointing=${region}_${thisdate}_${scan}_pcor.txt"\n')
+        makemapsscript.write('        cmdR1map="$STARLINK_DIR/bin/smurf/makemap in=^${region}_${thisdate}_${scan}_${thiswave}.txt out=${region}_${thisdate}_${scan}_${thiswave}_CR3.sdf ref=config/${region}_R3_extmask_${thiswave}.sdf config=^config/dimmconfig_R3.lis pixsize=$pixsize pointing=${region}_${thisdate}_${scan}_pcor.txt"\n')
         makemapsscript.write('        echo $cmdR1map\n')
         makemapsscript.write('        $cmdR1map\n')
         makemapsscript.write('    ##\n')
