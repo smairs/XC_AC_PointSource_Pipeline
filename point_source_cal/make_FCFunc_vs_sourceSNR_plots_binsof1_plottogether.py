@@ -1,3 +1,5 @@
+# Import necessary Packages
+
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import matplotlib as mpl
@@ -8,6 +10,7 @@ import glob
 from point_source_cal.get_vars import get_vars
 import seaborn as sns
 from point_source_cal.getfamily_June292020_plottogether import plot_SDfamsize
+from point_source_cal.get_bright_threshes import get_bright_threshes
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from astropy.time import Time
 import pickle
@@ -25,7 +28,7 @@ rc('axes',labelsize='x-small')
 ##################################################
 
 #target_uncertainties = [0.05] # = 5%
-def make_FCFunc_family_plots(region_to_run,wave,target_uncertainties,date_cutoff):
+def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json'):
     
     regionstring = ''
     
@@ -43,171 +46,27 @@ def make_FCFunc_family_plots(region_to_run,wave,target_uncertainties,date_cutoff
     
     plotdummy = -1
     
-    #Loop through the catalogues
-    brightness_threshes = {}
-    brightness_threshes['IC348'] = {}
-    brightness_threshes['NGC1333'] = {}
-    brightness_threshes['NGC2024'] = {}
-    brightness_threshes['NGC2071'] = {}
-    brightness_threshes['OMC23'] = {}
-    brightness_threshes['OPHCORE'] = {}
-    brightness_threshes['SERPM'] = {}
-    brightness_threshes['SERPS'] = {}
-    brightness_threshes['DR21C'] = {}
-    brightness_threshes['DR21N'] = {}
-    brightness_threshes['DR21S'] = {}
-    brightness_threshes['M17'] = {}
-    brightness_threshes['M17SWex'] = {}
-    brightness_threshes['S255'] = {}
+    brightness_threshes = json.load(jsonfile)
+
+    # Make sure loop below will work - i.e. ensure there is information on brightness thresholds for each target uncertainty listed
+    for i,eachtargunc in enumerate(target_uncertainties):
+        try:
+            brightness_threshes[wave][region_to_run][str(eachtargunc*100.0)]
+        except KeyError:
+            print('\n\nNO BRIGHTNESS THRESHOLD INFORMATION FOR A {}% target uncertainty!\n\n'.format(round(eachtargunc*100.0,2)))
+            print('\n\nREDEFINING TARGET UNCERTAINTY TO 5%...\n\n')
+            target_uncertainties[i] = 0.05
+
+    # Eliminate any duplicates in target_uncertainty list
+    target_uncertainties = sorted(list(set(target_uncertainties)))
 
 
     if np.logical_and(wave == '850',region_to_run in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']):  #-- Jy/beam! This is to match the coadd catalogue
-        thresh_conversion_factor = 1000.0 # To multiply catalogue numbers by so it matches the sourceinfo file
-        brightness_threshes['IC348']['10.0'] = 0.3
-        brightness_threshes['NGC1333']['10.0'] = 0.4 # 1.0 -- too many bright variables!
-        brightness_threshes['NGC2024']['10.0'] = 5.0
-        brightness_threshes['NGC2071']['10.0'] = 0.5 # 1.0 -- too many bright variables!
-        brightness_threshes['OMC23']['10.0'] = 2.0
-        brightness_threshes['OPHCORE']['10.0'] = 2.0
-        brightness_threshes['SERPM']['10.0'] = 0.8
-        brightness_threshes['SERPS']['10.0'] = 0.9
-    
-        brightness_threshes['IC348']['5.0'] = 0.3
-        brightness_threshes['NGC1333']['5.0'] = 0.4 # 1.0 -- too many bright variables!
-        brightness_threshes['NGC2024']['5.0'] = 5.0
-        brightness_threshes['NGC2071']['5.0'] = 0.5 # 1.0 -- too many bright variables!
-        brightness_threshes['OMC23']['5.0'] = 2.0
-        brightness_threshes['OPHCORE']['5.0'] = 2.0 
-        brightness_threshes['SERPM']['5.0'] = 0.8
-        brightness_threshes['SERPS']['5.0'] = 0.9
-    
-    
-        brightness_threshes['IC348']['2.5'] = 0.3
-        brightness_threshes['NGC1333']['2.5'] = 0.4 # 1.0 -- too many bright variables!
-        brightness_threshes['NGC2024']['2.5'] = 5.0
-        brightness_threshes['NGC2071']['2.5'] = 0.5 # 1.0 -- too many bright variables!
-        brightness_threshes['OMC23']['2.5'] = 2.0
-        brightness_threshes['OPHCORE']['2.5'] = 2.0
-        brightness_threshes['SERPM']['2.5'] = 0.8
-        brightness_threshes['SERPS']['2.5'] = 0.9
-    
-    
-        brightness_threshes['IC348']['1.0'] = 0.3
-        brightness_threshes['NGC1333']['1.0'] = 0.4 # 1.0 -- too many bright variables!
-        brightness_threshes['NGC2024']['1.0'] = 5.0
-        brightness_threshes['NGC2071']['1.0'] = 0.5 # 1.0 -- too many bright variables!
-        brightness_threshes['OMC23']['1.0'] = 2.0
-        brightness_threshes['OPHCORE']['1.0'] = 2.0
-        brightness_threshes['SERPM']['1.0'] = 0.8
-        brightness_threshes['SERPS']['1.0'] = 0.9
+        thresh_conversion_factor = 1000.0 # To multiply catalogue numbers by so it matches the sourceinfo file (Doug's catalogues were in Jy/beam)
+    else: #-- mJy/beam! This is to match the coadd catalogues! 
+        thresh_conversion_factor = 1.0 # To multiply catalogue numbers by so it matches the sourceinfo file -- no correction needed in this case (Steve's cats were in mJy/beam)
 
-
-    elif wave == '450': #-- mJy/beam! This is to match the coadd catalogues! 
-
-        thresh_conversion_factor = 1.0 # To multiply catalogue numbers by so it matches the sourceinfo file -- no correction needed in this case
-    
-        brightness_threshes['IC348']['10.0'] = 900.0
-        brightness_threshes['NGC1333']['10.0'] = 2e3
-        brightness_threshes['NGC2024']['10.0'] = 8e3
-        brightness_threshes['NGC2071']['10.0'] = 1.5e3
-        brightness_threshes['OMC23']['10.0'] = 3e3
-        brightness_threshes['OPHCORE']['10.0'] = 9e3
-        brightness_threshes['SERPM']['10.0'] = 1.5e3
-        brightness_threshes['SERPS']['10.0'] = 1.3e3
-        brightness_threshes['DR21C']['10.0'] = 1.3e4
-        brightness_threshes['DR21S']['10.0']   = 1.8e3
-        brightness_threshes['DR21N']['10.0']   = 2e3
-        brightness_threshes['M17']['10.0']     = 2e4
-        brightness_threshes['M17SWex']['10.0'] = 1e4
-        brightness_threshes['S255']['10.0']    = 4e3
-    
-    
-        brightness_threshes['IC348']['5.0'] = 900.0
-        brightness_threshes['NGC1333']['5.0'] = 2e3
-        brightness_threshes['NGC2024']['5.0'] = 8e3
-        brightness_threshes['NGC2071']['5.0'] = 1.5e3
-        brightness_threshes['OMC23']['5.0'] = 3e3
-        brightness_threshes['OPHCORE']['5.0'] = 9e3
-        brightness_threshes['SERPM']['5.0'] = 1.5e3
-        brightness_threshes['SERPS']['5.0'] = 1.3e3
-        brightness_threshes['DR21C']['5.0'] = 1.3e4
-        brightness_threshes['DR21S']['5.0']   = 1.8e3
-        brightness_threshes['DR21N']['5.0']   = 2e3
-        brightness_threshes['M17']['5.0']     = 2e4
-        brightness_threshes['M17SWex']['5.0'] = 1e4
-        brightness_threshes['S255']['5.0']    = 4e3
-    
-    
-        brightness_threshes['IC348']['2.5'] = 900.0
-        brightness_threshes['NGC1333']['2.5'] = 8e3
-        brightness_threshes['NGC2024']['2.5'] = 8e3
-        brightness_threshes['NGC2071']['2.5'] = 1.5e3
-        brightness_threshes['OMC23']['2.5'] = 3e3
-        brightness_threshes['OPHCORE']['2.5'] = 9e3
-        brightness_threshes['SERPM']['2.5'] = 4e3
-        brightness_threshes['SERPS']['2.5'] = 2e3
-        brightness_threshes['DR21C']['2.5'] = 1.3e4
-        brightness_threshes['DR21S']['2.5']   = 1.8e3
-        brightness_threshes['DR21N']['2.5']   = 2e3
-        brightness_threshes['M17']['2.5']     = 2e4
-        brightness_threshes['M17SWex']['2.5'] = 1e4
-        brightness_threshes['S255']['2.5']    = 4e3
-
-    
-        brightness_threshes['IC348']['1.0'] = 900.0
-        brightness_threshes['NGC1333']['1.0'] = 8e3
-        brightness_threshes['NGC2024']['1.0'] = 1e4
-        brightness_threshes['NGC2071']['1.0'] = 2e3
-        brightness_threshes['OMC23']['1.0'] = 3e3
-        brightness_threshes['OPHCORE']['1.0'] = 9e3
-        brightness_threshes['SERPM']['1.0'] = 4e3
-        brightness_threshes['SERPS']['1.0'] = 3e3
-        brightness_threshes['DR21C']['1.0'] = 1.3e4
-        brightness_threshes['DR21S']['1.0']   = 1.8e3
-        brightness_threshes['DR21N']['1.0']   = 2e3
-        brightness_threshes['M17']['1.0']     = 2e4
-        brightness_threshes['M17SWex']['1.0'] = 1e4
-        brightness_threshes['S255']['1.0']    = 4e3
-
-    elif np.logical_and(wave == '850',region_to_run in ['DR21C','DR21N','DR21S','M17','M17SWex','S255']): #-- mJy/beam!
-
-        thresh_conversion_factor = 1.0 # To multiply coadd catalogues by to match sourceinfo -- no conversion needed here.
-    
-        brightness_threshes['S255']['10.0'] = 1e3
-        brightness_threshes['M17SWex']['10.0'] = 2e3
-        brightness_threshes['M17']['10.0'] = 1.5e3
-        brightness_threshes['DR21S']['10.0'] = 4.5e2
-        brightness_threshes['DR21N']['10.0'] = 4.5e2
-        brightness_threshes['DR21C']['10.0'] = 2e3
-    
-    
-        brightness_threshes['S255']['5.0'] = 1e3
-        brightness_threshes['M17SWex']['5.0'] = 2e3
-        brightness_threshes['M17']['5.0'] = 1.5e3
-        brightness_threshes['DR21S']['5.0'] = 4.5e2
-        brightness_threshes['DR21N']['5.0'] = 4.5e2
-        brightness_threshes['DR21C']['5.0'] = 2e3
-    
-    
-        brightness_threshes['S255']['2.5'] = 1e3
-        brightness_threshes['M17SWex']['2.5'] = 2e3
-        brightness_threshes['M17']['2.5'] = 1.5e3
-        brightness_threshes['DR21S']['2.5'] = 4.5e2
-        brightness_threshes['DR21N']['2.5'] = 4.5e2
-        brightness_threshes['DR21C']['2.5'] = 2e3
-    
-    
-        brightness_threshes['S255']['1.0'] = 1e3
-        brightness_threshes['M17SWex']['1.0'] = 2e3
-        brightness_threshes['M17']['1.0'] = 1.5e3
-        brightness_threshes['DR21S']['1.0'] = 4.5e2
-        brightness_threshes['DR21N']['1.0'] = 4.5e2
-        brightness_threshes['DR21C']['1.0'] = 2e3      
-
-    
-    #fig,axs = plt.subplots(ncols=2,nrows=4,constrained_layout=False)
     fig,axs = plt.subplots(ncols=2,nrows=1,constrained_layout=False)
-    
     
     for eachtargunc in target_uncertainties:
         target_uncertainty_key = str(eachtargunc*100.0)
@@ -244,7 +103,7 @@ def make_FCFunc_family_plots(region_to_run,wave,target_uncertainties,date_cutoff
                 indexes_sorted       = cat['ID'][sorting_index]
                 peak_fluxes_sorted   = cat['PEAK_FLUX'][sorting_index]
     
-                cal_bright_index = np.where(peak_fluxes_sorted>=brightness_threshes[region][target_uncertainty_key])
+                cal_bright_index = np.where(peak_fluxes_sorted>=brightness_threshes[wave][region][target_uncertainty_key])
     
                 cal_IDs_no_vars =  indexes_sorted[cal_bright_index][np.where(var_index_sorted[cal_bright_index]==0)]
     
@@ -339,7 +198,7 @@ def make_FCFunc_family_plots(region_to_run,wave,target_uncertainties,date_cutoff
                 #    label='\% Maps w/ RMS that gives '+str(100*eachtargunc)+'\% Unc')
     
                 # Draw Vertical Threshold at cutoff flux for potential calibrators
-                ax1.axvline(x=brightness_threshes[region][target_uncertainty_key],linestyle='dashed',color='k',linewidth=2,
+                ax1.axvline(x=brightness_threshes[wave][region][target_uncertainty_key],linestyle='dashed',color='k',linewidth=2,
                             label='Potential Cal Thresh')
     
                 props = dict(boxstyle='round', facecolor='#e9f8ff', alpha=1.0)
