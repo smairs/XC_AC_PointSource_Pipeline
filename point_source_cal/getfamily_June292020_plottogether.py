@@ -12,137 +12,27 @@ from astropy.io import fits
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 
-######
+##################################################
+# Set up plot style for consistency for paper!
 from matplotlib.pyplot import rc
+rc('text', usetex=True)
+rc('font',family = 'serif')
+rc('font',size = 10)
+rc('xtick', labelsize='small')
+rc('ytick', labelsize='small')
+rc('axes',labelsize='x-small')
+##################################################
 
-def plot_SDfamsize(eachregion,wave,eachtargunc,date_cutoff):
 
-    rc('text', usetex=True)
-    rc('font', family='serif')
-    rc('xtick', labelsize='medium')
-    rc('ytick', labelsize='medium')
-    rc('axes', labelsize='x-large')
-    ######
+def plot_SDfamsize(eachregion,wave,eachtargunc,date_cutoff,jsonfile='point_source_cal/bright_threshes.json'):
 
-    brightness_threshes = {}
 
-    if np.logical_and(wave == '850',eachregion in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']): # -- in Jy/bm to match the coadd catalogues!
+    brightness_threshes = json.load(jsonfile)
 
-        thresh_conversion_factor = 1000.0 # To multiply coadd catalogues by to match sourceinfo 
-
-        #IC 348:
-        if eachregion == 'IC348':
-            brightness_threshes['5.0'] = [0.3]
-
-        #NGC 1333:
-        if eachregion == 'NGC1333':
-            brightness_threshes['5.0'] = [0.4]#[1.0] -- too many bright variables!
-
-        #NGC 2024:
-        if eachregion == 'NGC2024':
-            brightness_threshes['5.0'] = [5.0]
-
-        #NGC 2068:
-        if eachregion == 'NGC2071':
-            brightness_threshes['5.0'] = [0.5] # [1.0] -- too many bright variables!
-
-        #OMC 2/3:
-        if eachregion == 'OMC23':
-            brightness_threshes['5.0'] = [2.0]
-
-        #OPH CORE:
-        if eachregion == 'OPHCORE':
-            brightness_threshes['5.0'] = [2.0]
-
-        #SERP MAIN:
-        if eachregion == 'SERPM':
-            brightness_threshes['5.0'] = [0.8]
-
-        #SERP SOUTH:
-        if eachregion == 'SERPS':
-            brightness_threshes['5.0'] = [0.9]
-
-    elif wave == '450': # -- in mJy/bm to match the coadd catalogues!
-
-        thresh_conversion_factor = 1.0 # To multiply coadd catalogues by to match sourceinfo -- no conversion needed here.
-
-        #IC 348:
-        if eachregion == 'IC348':
-            brightness_threshes['5.0'] = [900.0]
-
-        #NGC 1333:
-        if eachregion == 'NGC1333':
-            brightness_threshes['5.0'] = [2e3]
-
-        #NGC 2024:
-        if eachregion == 'NGC2024':
-            brightness_threshes['5.0'] = [8e3]
-
-        #NGC 2068:
-        if eachregion == 'NGC2071':
-            brightness_threshes['5.0'] = [1.5e3]
-
-        #OMC 2/3:
-        if eachregion == 'OMC23':
-            brightness_threshes['5.0'] = [3e3]
-
-        #OPH CORE:
-        if eachregion == 'OPHCORE':
-            brightness_threshes['5.0'] = [9e3]
-
-        #SERP MAIN:
-        if eachregion == 'SERPM':
-            brightness_threshes['5.0'] = [1.5e3]
-
-        #SERP SOUTH:
-        if eachregion == 'SERPS':
-            brightness_threshes['5.0'] = [1.3e3]
-
-        #DR21C:
-        if eachregion == 'DR21C':
-            brightness_threshes['5.0'] = [1.3e4]
-
-        #DR21N
-        if eachregion == 'DR21N': 
-            brightness_threshes['5.0'] = [2e3] 
-
-        #DR21S
-        if eachregion == 'DR21S': 
-            brightness_threshes['5.0'] = [1.8e3] 
-
-        #M17
-        if eachregion == 'M17': 
-            brightness_threshes['5.0'] = [2e4] 
-
-        #M17SWex
-        if eachregion == 'M17SWex': 
-            brightness_threshes['5.0'] = [1e4] 
-
-        #S255
-        if eachregion == 'S255': 
-            brightness_threshes['5.0'] = [4e3] 
-
-    elif np.logical_and(wave == '850',eachregion in ['DR21C','DR21N','DR21S','M17','M17SWex','S255']): #-- mJy/beam!
-
-        thresh_conversion_factor = 1.0 # To multiply coadd catalogues by to match sourceinfo -- no conversion needed here.
-                                     
-        if eachregion == 'DR21C':
-            brightness_threshes['5.0'] = [2e3]
-
-        if eachregion == 'DR21N':
-            brightness_threshes['5.0'] = [4.5e2]
-
-        if eachregion == 'DR21S':
-            brightness_threshes['5.0'] = [4.5e2]
-
-        if eachregion == 'M17':
-            brightness_threshes['5.0'] = [1.5e3]
-
-        if eachregion == 'M17SWex':
-            brightness_threshes['5.0'] = [2e3]
-
-        if eachregion == 'S255':
-            brightness_threshes['5.0'] = [1e3]
+    if np.logical_and(wave == '850',region_to_run in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']):  #-- Jy/beam! This is to match the coadd catalogue
+        thresh_conversion_factor = 1000.0 # To multiply catalogue numbers by so it matches the sourceinfo file (Doug's catalogues were in Jy/beam)
+    else: #-- mJy/beam! This is to match the coadd catalogues! 
+        thresh_conversion_factor = 1.0 # To multiply catalogue numbers by so it matches the sourceinfo file -- no correction needed in this case (Steve's cats were in mJy/beam)
 
     region_noises = {}
     date_scans,noises = readnoise(wave+'_noises.txt',eachregion) # This is always in mJy/beam for both 450 and 850
@@ -156,9 +46,6 @@ def plot_SDfamsize(eachregion,wave,eachtargunc,date_cutoff):
     plotcolors.insert(0,'k')
     plotcolors.append('0.75')
 
-    brightnessthresh_dummy = -1
-
-    brightnessthresh_dummy = brightnessthresh_dummy + 1
     SD_threshes_thistarg = []
     Numcals_thistarg = []
     Colors_for_plot_thistarg = []
@@ -181,16 +68,15 @@ def plot_SDfamsize(eachregion,wave,eachtargunc,date_cutoff):
     #
 
     target_perc_unc = float(eachtargunc)/100.0
-    eachbrightnessthresh = brightness_threshes[eachtargunc][brightnessthresh_dummy]
+    brightnessthresh = brightness_threshes[wave][eachregion][eachtargunc]
 
     print('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('\nREGION = ' + eachregion + ', Flux Thresh: ', eachbrightnessthresh, ', Targ Uncertainty: ', eachtargunc)
+    print('\nREGION = ' + eachregion + ', Flux Thresh: ', brightnessthresh, ', Targ Uncertainty: ', eachtargunc)
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
-    brightnessthresh = eachbrightnessthresh
     # coadd_cat is what we used to plot the ensemble signal plots
 
     if eachregion not in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']:
@@ -417,32 +303,4 @@ def plot_SDfamsize(eachregion,wave,eachtargunc,date_cutoff):
 
     return(SD_of_best_fam_for_plot, numcals_for_plot, colors_for_plot,RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,
            normfluxes_by_date_all,families_all)
-
-    #SD_threshes_thistarg.append(SD_of_best_fam_for_plot)
-    #Numcals_thistarg.append(numcals_for_plot)
-    #Colors_for_plot_thistarg.append(colors_for_plot)
-    #perc_maps_thistarg.append(perc_maps)
-    #rmsthresh_thistarg.append(RMSthresh)
-    #targ_record_thistarg.append(str(eachtargunc))
-#
-#    for ind in range(len(SD_threshes_thistarg)):
-#        ax1.scatter(SD_of_best_fam_for_plot, numcals_for_plot, c=colors_for_plot,
-#                    cmap=cmap, norm=norm,
-#                    marker='o')
-#        print('\n\n\n', perc_maps, '\n\n\n')
-#        ax1.text(0.30, 0.95,
-#                 eachregion + '\nTarget Uncertainty = ' + eachtargunc + '\%\n' + str(
-#                     round(perc_maps)) + '\% of maps w/ largest family\nRMS $<$ ' + str(
-#                     round(RMSthresh, 1)) + ' mJy/beam',
-#                 horizontalalignment='center',
-#                 verticalalignment='top', transform=ax1.transAxes, fontsize=14, bbox=props)
-
-#    ax1.set_xlabel('Lowest SD Thresh For Family Size')
-#    ax1.set_ylabel('Family Size')
-#    ax1.set_ylim(ymin=1, ymax=14)
-#    ax1.set_xlim(xmin=0.02, xmax=0.35)
-#    fig.tight_layout()
-#    plt.savefig(eachregion + '_numcal_bestSDthresh_targunc'+str(int(float(eachtargunc)))+'.pdf', format='pdf')
-#    plt.clf()
-#    plt.close()
 
