@@ -4,7 +4,8 @@ import json
 # groups of point sources in each region that, together
 # when used as calibrators, we expect to return a
 # flux uncertainty of different target percentages.
-# These values were derived by looking at plots of
+# These values were derived by looking at plots of the reciprocal of the 
+# ensemble signal to noise: (Flux * sqrt[N] / noise)^-1
 #
 #
 #
