@@ -53,8 +53,8 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
         try:
             brightness_threshes[wave][region_to_run][str(eachtargunc*100.0)]
         except KeyError:
-            print('\n\nNO BRIGHTNESS THRESHOLD INFORMATION FOR A {}% target uncertainty!\n\n'.format(round(eachtargunc*100.0,2)))
-            print('\n\nREDEFINING TARGET UNCERTAINTY TO 5%...\n\n')
+            print('\tNO BRIGHTNESS THRESHOLD INFORMATION FOR A {}% target uncertainty!\n\n'.format(round(eachtargunc*100.0,2)))
+            print('\n\tREDEFINING TARGET UNCERTAINTY TO 5%...')
             target_uncertainties[i] = 0.05
 
     # Eliminate any duplicates in target_uncertainty list
@@ -79,7 +79,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
         target_uncertainty_key = str(eachtargunc*100.0)
         region         = sourcecat.split('/')[-1].split('_')[0]
 
-        print('\n\n',region,'\n\n')
+        #print('\n\n',region,'\n\n')
 
         # Read in the RMS noise of each observation of this region at this wavelength
         date_scans,noises = readnoise(wave+'_noises.txt',region)
@@ -209,7 +209,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
                      RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
                      normfluxes_by_date_all,families_all = get_previously_defined_family(region,wave,str(100*eachtargunc),date_cutoff) 
             except:
-                print('\n\nNO PREVIOUS FAMILY FILE FOUND WITH PARAMETERS: {}, {} microns, {}% target unc, {} (date cutoff for normalisation)\n\n~~~~~~FINDING FAMILY FROM SCRATCH~~~~\n'.format(region,wave,str(100*eachtargunc),date_cutoff))
+                print('\n\tNO PREVIOUS FAMILY FILE FOUND WITH PARAMETERS: {}, {} microns, {}% target unc, {} (date cutoff for normalisation)\n\n\t~~~~~~FINDING FAMILY FROM SCRATCH~~~~'.format(region,wave,str(100*eachtargunc),date_cutoff))
                 SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
                     RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
                     normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
@@ -244,8 +244,6 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
         if len(families_all)>0:
             if len(families_all[-1])>0:
                 cal_info_dict['family'] = families_all[-1][-1]
-            else:
-                print(families_all)
             cal_info_dict['datescans'] = FCF_dates_all[-1]
             cal_info_dict['RelFCFs'] = FCFs_all[-1]
             cal_info_dict['RelFCFuncs'] = np.array(FCF_uncs_all[-1]) / 100

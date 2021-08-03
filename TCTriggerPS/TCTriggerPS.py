@@ -101,7 +101,7 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
     os.system('mkdir '+output_dir)
     os.system('mkdir '+output_dir+'/'+region)
 
-    print('\n\n\n\nDONE\n\n\n')
+    #print('\n\n\n\nDONE\n\n\n')
 
     # ONLYEXTRA will perform this full analysis for a smaller list of
     # "extra" source positions
@@ -147,9 +147,9 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 
         metadata = TCMetadata(input_data,region,output_dir+'/'+region,wave=wave,WEIGHTED=WEIGHTED,GOODBOX=GOODBOX)
    
-        print('\n\n')
-        print(metadata)
-        print('\n\n')
+        #print('\n\n')
+        #print(metadata)
+        #print('\n\n')
 
         ###################################
 	###################################
@@ -193,9 +193,9 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 
                 YSOtable     = TCYSOcompare(peakcat_name,protocat,diskcat,region,wave=wave)
 
-                print('\n\n')
-                print(YSOtable)
-                print('\n\n')
+                #print('\n\n')
+                #print(YSOtable)
+                #print('\n\n')
 
                 os.system('mv '+region+'_YSOcompare_'+wave+'.txt '+output_dir+'/'+region)
        
@@ -203,9 +203,9 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 
                 YSOtable = Table.read(output_dir+'/'+region+'/'+region+'_YSOcompare_'+wave+'.txt',format='ascii') 
 
-                print('\n\n')
-                print(YSOtable)
-                print('\n\n')
+                #print('\n\n')
+                #print(YSOtable)
+                #print('\n\n')
             
 	    ##################################################
 	    ##################################################
@@ -237,9 +237,9 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 
             source_slope_table,triggered_sources = TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = trigger_thresh,brightness_thresh = brightness_thresh,sd_thresh = sd_thresh,wave=wave,WEIGHTED=WEIGHTED,GOODBOX=GOODBOX)
 
-            print('\n\n')
-            print(source_slope_table)
-            print('\n\n')
+            #print('\n\n')
+            #print(source_slope_table)
+            #print('\n\n')
 
             ##################
             #### Clean Up ####
@@ -357,4 +357,4 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
            # os.system('mv variable*txt '+output_dir+'/'+region+'/')
            # os.system('mv '+region+'*txt '+output_dir+'/'+region+'/')
 #
-    print("This program took ",round((time.time() - start_time)/60.0,3), " minutes to run")
+    print("\tTCTriggerPS took ",round((time.time() - start_time)/60.0,3), " minutes to run")

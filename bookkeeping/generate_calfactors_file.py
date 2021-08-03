@@ -65,7 +65,6 @@ def generate_calfactors_file(datadir,region,wave):
     weighted_datescans      = []
     for i in weighted_datescans1:
         weighted_datescans.append(str(i)[0:8]+'_'+str(i)[8:])
-        print(str(i)[0:8]+'_'+str(i)[8:])
     weighted_calfactors     = np.array(weighted_file['Divisor'])[np.argsort(weighted_datescans)]
     weighted_calfactoruncs  = np.array(weighted_file['WeightedCalUnc'])[np.argsort(weighted_datescans)]
     weighted_datescans      = np.array(weighted_datescans)[np.argsort(np.array(weighted_datescans))]

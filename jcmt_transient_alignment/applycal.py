@@ -2,7 +2,7 @@ import numpy as np
 import glob
 import starlink
 import os
-#starlink.wrapper.change_starpath("/stardev")
+#starlink.wrapper.change_starpath("/starlink")
 from starlink import kappa
 
 def apply_relFCF_AC(tablefile,wave):

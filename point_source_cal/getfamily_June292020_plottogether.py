@@ -59,13 +59,13 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
     target_perc_unc = float(eachtargunc)/100.0
     brightnessthresh = brightness_threshes[wave][eachregion][eachtargunc]
 
-    print('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('\nREGION = ' + eachregion + ', Flux Thresh: ', brightnessthresh, ', Targ Uncertainty: ', eachtargunc)
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
+    #print('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    #print('\nREGION = ' + eachregion + ', Flux Thresh: ', brightnessthresh, ', Targ Uncertainty: ', eachtargunc)
+    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
 
 ###########
 # Extract Source Information
@@ -93,7 +93,7 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
     known_variables = []
     for eachknownvariable in var_list:
         known_variables.append(str(eachknownvariable).zfill(2))
-    print('\n\n{} Known Variables:'.format(eachregion),known_variables,'\n\n')
+    print('\n\t{} Known Variables:'.format(eachregion),known_variables,'\n\n')
 
 ############
 ############
@@ -143,7 +143,7 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
         sourceinfo[eachsource]['dates_thisRMSlimit'] = np.array(datelist_thisRMSlimit)
 
 
-    print('\nDATES THAT SURVIVED RMS: ',datelist_thisRMSlimit,'\n')
+    #print('\nDATES THAT SURVIVED RMS: ',datelist_thisRMSlimit,'\n')
 
 #############
 #############
@@ -258,7 +258,7 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
         dummy = 0
         for eachcombo in subsets_of_this_size:
             dummy += 1
-            print('Working on Source Combo ', dummy, ' of ', len(subsets_of_this_size), ' -- Family Size: ',eachfamilysize, ' -- total cal num ', len(source_set))
+            print('\tWorking on Source Combo ', dummy, ' of ', len(subsets_of_this_size), ' -- Family Size: ',eachfamilysize, ' -- total cal num ', len(source_set))
             SDs_in_this_combo_of_sources = []
             for eachpair, eachSD in zip(sorted_pairnames, sorted_SDs):
                 if (eachpair[0:2] in eachcombo) and (eachpair[2:4] in eachcombo):
