@@ -20,7 +20,7 @@ def applyWeightedCal(imagelist,wave):
         date_scan = eachimage.split('/')[-1].split('_')[1]+'_'+eachimage.split('/')[-1].split('_')[2]
         if date_scan in corrected_datescans:
             calfactor = np.array(calinfo['Divisor'])[np.where(np.array(corrected_datescans)==date_scan)]
-            print(calfactor) 
+            #print(calfactor) 
             if len(calfactor)>0:
                 kappa.cdiv(eachimage,calfactor[0],eachimage.split('.sdf')[0]+'_Wcal.sdf')
         

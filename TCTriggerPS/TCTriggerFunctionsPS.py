@@ -53,7 +53,7 @@ def TCCoadd(input_data,wave,GOODBOX=False):
     datescans_for_sorting = []
     for i in input_data:
         datescans_for_sorting.append(i.split('_'+wave)[0].split('_')[-2]+'_'+i.split('_'+wave)[0].split('_')[-1])
-    print(i.split('_'+wave)[0].split('_')[-2]+'_'+i.split('_'+wave)[0].split('_')[-1])
+    #print(i.split('_'+wave)[0].split('_')[-2]+'_'+i.split('_'+wave)[0].split('_')[-1])
     datescans_for_sorting = np.array(datescans_for_sorting)
     input_data = np.array(input_data)
 
@@ -142,7 +142,7 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
     # First, check to see if a metadata table already exists. This is one of the longest steps in
     # the TCTrigger pipeline - so if a table already exists, don't reinvent the wheel
 
-    print('\n\n\n',input_data,'\n\n\n')
+    #print('\n\n\n',input_data,'\n\n\n')
 
     if wave == '450':
         mjypbmfactor = 491000
@@ -172,7 +172,7 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
         for eachinput in sorted(list(input_data)):
             datescanthisinput = eachinput.split('_')[ind1]+'_'+eachinput.split('_')[ind1+1]
             if region+'_'+datescanthisinput+'_'+wave not in list(t['Name']):
-                print('NEW DATA!',eachinput)
+                #print('NEW DATA!',eachinput)
                 new_input_data.append(eachinput)
 
         input_data = new_input_data
@@ -214,10 +214,10 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
 
     for eachfile in input_data:
 
-        print('\n\n\n\n',eachfile,'\n\n\n\n')
+        #print('\n\n\n\n',eachfile,'\n\n\n\n')
         dummyID=dummyID+1
         picard_out = picard.scuba2_mapstats(list([eachfile]))
-        print('\n\n\n\n',picard_out,'\n\n\n\n')
+        #print('\n\n\n\n',picard_out,'\n\n\n\n')
         picard_logfiles = picard_out.logfiles
         for eachlog in picard_logfiles:
             if 'log.mapstats' in eachlog:
@@ -281,7 +281,7 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
         IDs.append(dummyID)
         names.append(region+'_'+year+month+day+'_'+scan+'_'+wave)
         UTdates.append(year+'-'+month+'-'+day+'T'+isotUThour+':'+isotUTminute+':'+isotUTsecond)
-        print('\n\n\n',year,month,day,isotUThour,isotUTminute,isotUTsecond,'\n\n\n')
+        #print('\n\n\n',year,month,day,isotUThour,isotUTminute,isotUTsecond,'\n\n\n')
         julian_dates.append(str(Time(year+'-'+month+'-'+day+'T'+isotUThour+':'+isotUTminute+':'+isotUTsecond,format='isot',scale='utc').jd))
         scans.append(str(int(metadata['Obs'])))
         elevs.append(str(int(metadata['El'])))
@@ -547,7 +547,7 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     previous_results_list = sorted(glob.glob(output_dir+'/*'+fileending))
     previous_results_thisregion = []
     if len(previous_results_list)>0:
-        print('\n\n\n\n\nPREVIOUS SOURCEINFO FILE FOUND\n\n\n\n\n')
+        #print('\n\n\n\n\nPREVIOUS SOURCEINFO FILE FOUND\n\n\n\n\n')
         previous_results=True
         previous_results_thisregion.append(previous_results_list[-1])
 
@@ -559,7 +559,7 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
            if eachcolname[0:2]=='f_':
                datesinfile.append(eachcolname.split('_')[1])
                alldatescans.append(eachcolname.split('_')[1]+'_'+eachcolname.split('_')[2])
-       print('DATES IN PREVIOUS FILE:',datesinfile,'\n\n\n')
+       #print('DATES IN PREVIOUS FILE:',datesinfile,'\n\n\n')
 
     peak_cat    = apfits.getdata(peakcat)
 
@@ -762,7 +762,7 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
     sourcename_fortable = list(source_dict.keys())[0]  
     number_of_epochs    = len(source_dict[sourcename_fortable]['dates'])
     number_of_sources   = len(list(source_dict.keys()))
-    print('\n\n\n\nSOURCE_DICT DATES IN IMPORTANT CODE',source_dict[sourcename_fortable]['dates'],'\n\n\n\n')
+    #print('\n\n\n\nSOURCE_DICT DATES IN IMPORTANT CODE',source_dict[sourcename_fortable]['dates'],'\n\n\n\n')
 
 
     # Get today's date into a string

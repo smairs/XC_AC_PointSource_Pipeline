@@ -8,9 +8,6 @@ def make_pcor(tablefile,reduce_firstepoch=False):
 
     if reduce_firstepoch:
         for eachdate,eachdx,eachdy in zip(table['Key'],table['dx'],table['dy']):
-        #for eachdate,eachdx,eachdy in zip([str(table['Key'])],[float(table['dx'])],[float(table['dy'])]):
-            print('PCOR FILE: ',eachdx,eachdy)
-            #eachdatestr = eachdate.split("'")[1]
             eachdatestr = eachdate.decode('utf-8')
             if len(glob.glob(tablefile.split('_')[1]+'/*'+eachdatestr.split('-')[0]+'_'+eachdatestr.split('-')[1].zfill(5)+'*'))>0:
                 pcorfile = open(tablefile.split('_')[1]+'_'+eachdatestr.split('-')[0]+'_'+eachdatestr.split('-')[1].zfill(5)+'_pcor.txt','w')
@@ -23,12 +20,10 @@ def make_pcor(tablefile,reduce_firstepoch=False):
 
     else:
         for eachdate,eachdx,eachdy in zip(table['Key'],table['dx'],table['dy']):
-            print('PCOR FILE: ',eachdx,eachdy)
             if not np.logical_and(str(eachdx)==str(0.0),str(eachdy)==str(0.0)):
                 if not np.logical_and(str(eachdx)==str(-0.0),str(eachdy)==str(0.0)):
                     eachdatestr = eachdate.decode('utf-8')
                     if len(glob.glob(tablefile.split('_')[1]+'/*'+eachdatestr.split('-')[0]+'_'+eachdatestr.split('-')[1].zfill(5)+'*'))>0:
-                        print('MAKING '+tablefile.split('_')[1]+'_'+eachdatestr.split('-')[0]+'_'+eachdatestr.split('-')[1].zfill(5)+'_pcor.txt')
                         pcorfile = open(tablefile.split('_')[1]+'_'+eachdatestr.split('-')[0]+'_'+eachdatestr.split('-')[1].zfill(5)+'_pcor.txt','w')
                         pcorfile.write('#SYSTEM=TRACKING\n')
                         pcorfile.write('#TAI DLON DLAT\n')

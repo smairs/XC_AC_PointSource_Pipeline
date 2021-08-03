@@ -1,7 +1,6 @@
 from datetime import datetime
 import numpy as np
 import numpy.ma as ma
-#import seaborn as sns
 import os as os
 import operator as op
 import pickle
@@ -16,11 +15,7 @@ from scipy.optimize import curve_fit
 from collections import defaultdict
 
 from starlink import kappa, convert
-starlink.wrapper.change_starpath("/stardev")
-#starlink.wrapper.change_starpath("/home/cobr/star-2018A/")
-
-#sns.set_style('whitegrid')
-#sns.color_palette('colorblind')
+starlink.wrapper.change_starpath("/starlink")
 
 
 def default_to_regular(d):
@@ -118,9 +113,6 @@ def gaussian_fit_xc(x_correlation):
     y_max = int(y_max)
     x_max = int(x_max)
 
-    print(x_correlation.shape[0],x_correlation.shape[1])
-    print(y_max,x_max) 
-
     # clipping map further to better fit a gaussian profile to it
     x_correlation = x_correlation[y_max - width:y_max + width + 1, x_max - width:x_max + width + 1]
     if x_correlation.shape[0]==x_correlation.shape[1]:
@@ -144,7 +136,6 @@ def gaussian_fit_xc(x_correlation):
             },  # allowing var in amplitude to better fit gauss
         )
         fitting_gauss = LevMarLSQFitter()  # Fitting method; Levenberg-Marquardt Least Squares algorithm
-        print(x_mesh,y_mesh)
         best_fit_gauss = fitting_gauss(gauss_init, x_mesh, y_mesh, x_correlation)  # The best fit for the map
 
         # now we can get the location of our peak fitted gaussian and add them back to get a total offset
@@ -347,7 +338,6 @@ def make_data_dict(region='DR21C',datadir='DR21C',alignment_iteration=0,DIST=7,l
     else:
         convert.ndf2fits(FilePath, OutPath)
     FilePath = OutPath
-    print('\n\nFIRST EPOCH: '+FilePath+'\n\n')
     FirstEpoch = fits.open(FilePath)  # opening the file in astropy
     FirstEpochData = FirstEpoch[0].data[0]  # Numpy data array for the first epoch
     FirstEpochCentre = np.array([FirstEpoch[0].header['CRPIX1'], FirstEpoch[0].header['CRPIX2']])
@@ -400,7 +390,6 @@ def make_data_dict(region='DR21C',datadir='DR21C',alignment_iteration=0,DIST=7,l
             date = ''.join(str(hdul[0].header['DATE-OBS']).split('T')[0].split('-'))  # extract date from the header
             date += '-' + str(hdul[0].header['OBSNUM'])
             JulianDate = str(float(hdul[0].header['MJD-OBS']) + 2400000.5)
-            print('Epoch: {:14}'.format(date))
             data[region][wavelength]['header']['airmass'][date] = AirMass
             data[region][wavelength]['header']['t225'][date] = tau225
             data[region][wavelength]['header']['julian_date'][date] = JulianDate
