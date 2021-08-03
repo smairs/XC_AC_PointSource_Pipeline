@@ -37,4 +37,4 @@ At the top of the program, you can select whether you would like to run the cros
 or if you just want to run the point source calibration (PScal) only (i.e. the weighted flux calibration and localised "source-skewering" calibration). The latter also
 performs the pointing checks and generates the light curves.
 
-![image info](./Pipeline.png)
+![image info](./TransientPipelineFlowChart.png)
