@@ -10,6 +10,7 @@ from point_source_cal.noisefunctions import readnoise
 from point_source_cal.get_vars import get_vars
 from astropy.io import fits
 import seaborn as sns
+import json
 
 ##################################################
 # Set up plot style for consistency for paper!
@@ -268,7 +269,6 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
         SD_of_best_fam_for_plot.append(min(highest_SD_in_each_combo))  # The lowest thres we could use to construct a fam of this number of sources
         fam_for_plot.append(np.array(list_of_combos)[np.argmin(np.array(highest_SD_in_each_combo))])
 
-
         # Now calculate median FCF unc using sourceinfo
         norm_flux_lists_RMS_corrected = []
         date_list_RMS_corrected = []
@@ -312,6 +312,20 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
             med_FCF_cat_for_plot.append('5-7\%')
         else:
             med_FCF_cat_for_plot.append('>7\%')
+
+    family_results = {}
+    family_results['SD_of_best_fam_for_plot'] = SD_of_best_fam_for_plot
+    family_results['numcals_for_plot']        = numcals_for_plot
+    family_results['med_FCF_cat_for_plot']    = med_FCF_cat_for_plot
+    family_results['RMSthresh']               = RMSthresh
+    family_results['FCF_dates_all']           = FCF_dates_all
+    family_results['FCFs_all']                = FCFs_all
+    family_results['FCF_uncs_all']            = FCF_uncs_all
+    family_results['normfluxes_by_date_all']  = normfluxes_by_date_all
+    family_results['families_all']            = families_all
+
+    with open('config/Families_info_{}_{}_{}_{}.json'.format(region,wave,eachtargunc,date_cutoff),'w') as outfile:
+        json.dump(family_results,outfile)
 
     return(SD_of_best_fam_for_plot, numcals_for_plot,med_FCF_cat_for_plot,RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,normfluxes_by_date_all,families_all)
 

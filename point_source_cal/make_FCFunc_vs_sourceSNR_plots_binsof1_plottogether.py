@@ -11,6 +11,7 @@ from point_source_cal.get_vars import get_vars
 import seaborn as sns
 from point_source_cal.getfamily_June292020_plottogether import plot_SDfamsize
 from point_source_cal.get_bright_threshes import get_bright_threshes
+from point_sourve_cal.get_previously_defined_family import get_previously_defined_family
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from astropy.time import Time
 import pickle
@@ -27,7 +28,7 @@ rc('ytick', labelsize='small')
 rc('axes',labelsize='x-small')
 ##################################################
 
-def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/',plotcolorbounds=[0,30,40,50,60,70,80,90,100]):
+def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=False,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/',plotcolorbounds=[0,30,40,50,60,70,80,90,100]):
     '''
     This code plots the expected calibration uncertainty for each source (noise/[Flux*sqrt(N)]) 
     where N is the number of sources above that brightness threshold
@@ -197,9 +198,22 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,target_uncertainties
 ###########
 ########### 
 
-        SD_of_best_fam_for_plot,numcals_for_plot,colors_for_plot,\
-            RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-            normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
+       if find_new_families:
+
+            SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
+                RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
+                normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
+
+       else:
+           try:
+               SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
+                    RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
+                    normfluxes_by_date_all,families_all = get_previously_defined_family(region,wave,str(100*eachtargunc),date_cutoff) 
+           except:
+               print('\n\nNO PREVIOUS FAMILY FILE FOUND WITH PARAMETERS: {}, {} microns, {}% target unc, {} (date cutoff for normalisation)\n\n~~~~~~FINDING FAMILY FROM SCRATCH~~~~\n'.format(region,wave,str(100*eachtargunc),date_cutoff))
+               SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
+                   RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
+                   normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
 
 
 ###########
@@ -209,7 +223,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,target_uncertainties
 ###########    
         props = dict(boxstyle='round', facecolor='#e9f8ff', alpha=1.0)
     
-        sns.scatterplot(SD_of_best_fam_for_plot, numcals_for_plot, hue=colors_for_plot,marker='o')
+        sns.scatterplot(SD_of_best_fam_for_plot, numcals_for_plot, hue=FCF_uncs_cat,marker='o')
         plt.text(0.30*max(SD_of_best_fam_for_plot), 0.95*max(numcals_for_plot),region,horizontalalignment='center',verticalalignment='top', fontsize=10, bbox=props)
     
         plt.xlabel('Lowest SD Thresh For Family Size')
