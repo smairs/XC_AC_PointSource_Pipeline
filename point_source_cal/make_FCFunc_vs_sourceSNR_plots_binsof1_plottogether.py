@@ -38,7 +38,13 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,target_uncertainties
     region_scaling = 100 #mJy/beam
     
     # Grab the source catalogue derived from the co-add for this region and wavelength
-    sourcecat = sorted(list(glob.glob(cat_dir+'/'+region_to_run+'*'+wave+'*fits')))[0]
+    if eachregion not in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']:
+        sourcecat = cat_dir+eachregion+'_'+wave+'_sourcecat_20201201.fits'
+    elif wave == '450':
+        sourcecat = cat_dir+eachregion+'_'+wave+'_sourcecat_20200911.fits'
+    elif wave == '850':
+        sourcecat = cat_dir+eachregion+'_'+wave+'_sourcecat_20170616.fits'
+
     
     # Get the brightness thresholds for all regions and wavelengths organised by target uncertainty (previously compiled from manual testing) 
     brightness_threshes = json.load(jsonfile)
@@ -193,7 +199,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,target_uncertainties
 
         SD_of_best_fam_for_plot,numcals_for_plot,colors_for_plot,\
             RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-            normfluxes_by_date_all,families_all= plot_SDfamsize(region,wave,str(100*eachtargunc),date_cutoff)
+            normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
 
 
 ###########
