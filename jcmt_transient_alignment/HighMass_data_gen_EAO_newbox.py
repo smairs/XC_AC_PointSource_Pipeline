@@ -15,7 +15,7 @@ from scipy.optimize import curve_fit
 from collections import defaultdict
 
 from starlink import kappa, convert
-starlink.wrapper.change_starpath("/starlink")
+starlink.wrapper.change_starpath("/star")
 
 
 def default_to_regular(d):
