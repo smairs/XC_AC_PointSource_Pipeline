@@ -1,8 +1,6 @@
 # Import necessary Packages
 
 import matplotlib.pyplot as plt
-import matplotlib.colors as mcolors
-import matplotlib as mpl
 import numpy as np
 from astropy.io import fits
 from point_source_cal.noisefunctions import readnoise
@@ -10,12 +8,11 @@ import glob
 from point_source_cal.get_vars import get_vars
 import seaborn as sns
 from point_source_cal.getfamily_June292020_plottogether import plot_SDfamsize
-from point_source_cal.get_bright_threshes import get_bright_threshes
-from point_sourve_cal.get_previously_defined_family import get_previously_defined_family
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from point_source_cal.get_previously_defined_family import get_previously_defined_family
 from astropy.time import Time
 import pickle
 import os
+import json
 
 ##################################################
 # Set up plot style for consistency for paper!
@@ -28,7 +25,7 @@ rc('ytick', labelsize='small')
 rc('axes',labelsize='x-small')
 ##################################################
 
-def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=False,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/',plotcolorbounds=[0,30,40,50,60,70,80,90,100]):
+def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=False,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/'):
     '''
     This code plots the expected calibration uncertainty for each source (noise/[Flux*sqrt(N)]) 
     where N is the number of sources above that brightness threshold
@@ -39,16 +36,17 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
     region_scaling = 100 #mJy/beam
     
     # Grab the source catalogue derived from the co-add for this region and wavelength
-    if eachregion not in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']:
-        sourcecat = cat_dir+eachregion+'_'+wave+'_sourcecat_20201201.fits'
+    if region_to_run not in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']:
+        sourcecat = cat_dir+region_to_run+'_'+wave+'_sourcecat_20201201.fits'
     elif wave == '450':
-        sourcecat = cat_dir+eachregion+'_'+wave+'_sourcecat_20200911.fits'
+        sourcecat = cat_dir+region_to_run+'_'+wave+'_sourcecat_20200911.fits'
     elif wave == '850':
-        sourcecat = cat_dir+eachregion+'_'+wave+'_sourcecat_20170616.fits'
+        sourcecat = cat_dir+region_to_run+'_'+wave+'_sourcecat_20170616.fits'
 
     
     # Get the brightness thresholds for all regions and wavelengths organised by target uncertainty (previously compiled from manual testing) 
-    brightness_threshes = json.load(jsonfile)
+    with open(jsonfile) as json_file:
+        brightness_threshes = json.load(json_file)
 
     # Make sure loop below will work - i.e. ensure there is information on brightness thresholds for each target uncertainty listed
     for i,eachtargunc in enumerate(target_uncertainties):
@@ -122,7 +120,8 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
 
         brightnesses_to_plot = []
         ensemble_uncertainty = []
-        perc_maps_to_plot = []
+        num_sources_to_plot  = []
+        perc_maps_to_plot    = []
         for eachflux in peak_fluxes_sorted:
             num_sources_above_threshold = len(peak_fluxes_sorted[np.where(peak_fluxes_sorted>=eachflux)])
             # For x and y
@@ -134,13 +133,13 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
             RMS_threshold_for_this_set_of_sources = eachtargunc*eachflux*np.sqrt(num_sources_above_threshold)
             # The fraction of plots with RMS noise low enough to use this full set of sources as a family
             perc_maps = 100*len(noises[np.where(noises<=RMS_threshold_for_this_set_of_sources)])/float(len(noises)) 
-            if percmaps <30:
+            if perc_maps <30:
                 perc_maps_to_plot.append('<30\%')
-            elif percmaps <60:
+            elif perc_maps <60:
                 perc_maps_to_plot.append('30-60\%')
-            elif percmaps <90:
+            elif perc_maps <90:
                 perc_maps_to_plot.append('60-90\%')
-            elif percmaps <=100:
+            elif perc_maps <=100:
                 perc_maps_to_plot.append('90-100\%')
 
 
@@ -159,7 +158,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
         sns.scatterplot(x=brightnesses_to_plot,y=ensemble_uncertainty,hue=perc_maps_to_plot)
 
         if len(np.where(var_index_sorted==1)[0])>0:
-            sns.scatterplot(x=brightnesses_to_plot[np.where(var_index_sorted==1)],ensemble_uncertainty[np.where(var_index_sorted==1)],color='r',label='Variable',marker='*',s=120)
+            sns.scatterplot(x=brightnesses_to_plot[np.where(var_index_sorted==1)],y=ensemble_uncertainty[np.where(var_index_sorted==1)],color='r',label='Variable',marker='*',s=120)
             for eachvar in range(len(brightnesses_to_plot[np.where(var_index_sorted==1)])):
                 plt.text(brightnesses_to_plot[np.where(var_index_sorted==1)][eachvar],ensemble_uncertainty[np.where(var_index_sorted==1)][eachvar]+0.5,var_names_sorted[np.where(var_index_sorted==1)][eachvar],rotation=90)
         plt.xlim(xmin=200,xmax=3*1e5)
@@ -181,7 +180,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
             x_placement=0.25*max(brightnesses_to_plot)
         else:
             x_placement = 0.75*max(brightnesses_to_plot)
-        ax1.text(x_placement, 0.8*max(ensemble_uncertainty), region,horizontalalignment='center',verticalalignment='top', fontsize=10, bbox=props)
+        plt.text(x_placement, 0.8*max(ensemble_uncertainty), region,horizontalalignment='center',verticalalignment='top', fontsize=10, bbox=props)
     
         # Draw legend
         if region=='SERPM':
@@ -198,22 +197,22 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
 ###########
 ########### 
 
-       if find_new_families:
+        if find_new_family:
 
-            SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
-                RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-                normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
+             SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
+                 RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
+                 normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
 
-       else:
-           try:
-               SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
+        else:
+            try:
+                SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
+                     RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
+                     normfluxes_by_date_all,families_all = get_previously_defined_family(region,wave,str(100*eachtargunc),date_cutoff) 
+            except:
+                print('\n\nNO PREVIOUS FAMILY FILE FOUND WITH PARAMETERS: {}, {} microns, {}% target unc, {} (date cutoff for normalisation)\n\n~~~~~~FINDING FAMILY FROM SCRATCH~~~~\n'.format(region,wave,str(100*eachtargunc),date_cutoff))
+                SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
                     RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-                    normfluxes_by_date_all,families_all = get_previously_defined_family(region,wave,str(100*eachtargunc),date_cutoff) 
-           except:
-               print('\n\nNO PREVIOUS FAMILY FILE FOUND WITH PARAMETERS: {}, {} microns, {}% target unc, {} (date cutoff for normalisation)\n\n~~~~~~FINDING FAMILY FROM SCRATCH~~~~\n'.format(region,wave,str(100*eachtargunc),date_cutoff))
-               SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
-                   RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-                   normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
+                    normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
 
 
 ###########

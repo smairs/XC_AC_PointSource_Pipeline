@@ -37,10 +37,11 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
 
     # Load the brightness thresholds that have been previously defined by running the make_FCF* code to observe
     # Ensemble uncertainties versus fluxes
-    brightness_threshes = json.load(jsonfile)
+    with open(jsonfile) as json_file:
+        brightness_threshes = json.load(json_file)
 
     # Define a conversion factor to ensure that the 850 micron, low mass maps are in mJy/beam -- the 850 high mass regions and 450 micron data (all regions) is already in these units 
-    if np.logical_and(wave == '850',region_to_run in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']):  #-- Jy/beam! This is to match the coadd catalogue
+    if np.logical_and(wave == '850',eachregion in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']):  #-- Jy/beam! This is to match the coadd catalogue
         thresh_conversion_factor = 1000.0 # To multiply catalogue numbers by so it matches the sourceinfo file (Doug's catalogues were in Jy/beam)
     else: #-- mJy/beam! This is to match the coadd catalogues! 
         thresh_conversion_factor = 1.0 # To multiply catalogue numbers by so it matches the sourceinfo file -- no correction needed in this case (Steve's cats were in mJy/beam)
@@ -142,7 +143,7 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
         sourceinfo[eachsource]['dates_thisRMSlimit'] = np.array(datelist_thisRMSlimit)
 
 
-    print('\nDATES THAT SURVIVED RMS: ',datelist_thisRMSlimit\n)
+    print('\nDATES THAT SURVIVED RMS: ',datelist_thisRMSlimit,'\n')
 
 #############
 #############
@@ -324,8 +325,8 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
     family_results['normfluxes_by_date_all']  = normfluxes_by_date_all
     family_results['families_all']            = families_all
 
-    with open('config/Families_info_{}_{}_{}_{}.json'.format(region,wave,eachtargunc,date_cutoff),'w') as outfile:
-        json.dump(family_results,outfile)
+    with open('config/Families_info_{}_{}_{}_{}.bin'.format(eachregion,wave,int(float(eachtargunc)),date_cutoff),'wb') as outfile:
+        pickle.dump(family_results,outfile)
 
     return(SD_of_best_fam_for_plot, numcals_for_plot,med_FCF_cat_for_plot,RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,normfluxes_by_date_all,families_all)
 
