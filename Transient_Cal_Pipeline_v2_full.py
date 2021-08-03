@@ -294,16 +294,21 @@ if not alignment_ACcalonly:
             #changeunits(most_recent_XC,wave) 
             
             # Smooth all the data!
-            
+
+            print('\nSmoothing Data....')           
+ 
             smooth_input_data(most_recent_XC,wave)   
            
+            print('\nGenerating Initial Sourceinfo File....')
+
             # The following generates the sourceinfo file that the weighted calibration uses! 
             make_coadds_metadata(eachregion,most_recent_XC,wave)
+
+            print('\nRunning The Weighted Calibration....')
 
             # Run Doug's Calibration program
             var_list,var_names = get_vars(eachregion,wave)
             sourceinfofile = sorted(glob.glob('pointsource_results/'+eachregion+'/'+'*_'+wave+'_sourceinfo.txt'))[-1]
-            print('SOURCEINFOFILE: ',sourceinfofile)
             if wave == '450':
                 weighted_cal(1000.0,var_list,sourceinfofile,'pointsource_results/'+eachregion+'/',date_cutoff=PScal_cutoff_date,numiter=5,fid_450_perc=0.05) # Cutoff is in millijanskys!
             else:
@@ -319,7 +324,6 @@ if not alignment_ACcalonly:
                 weighted_datescans      = []
                 for i in weighted_datescans1:
                     weighted_datescans.append(str(i)[0:8]+'_'+str(i)[8:])
-                    #print(str(i)[0:8]+'_'+str(i)[8:])
                 weighted_datescans = np.array(weighted_datescans)
 
                 goodmaps      = []
@@ -340,28 +344,28 @@ if not alignment_ACcalonly:
                     strname = eachname.decode('utf-8')
                     previously_known_good_maps.append(strname.split('_')[-3]+'_'+strname.split('_')[-2])
 
-                print(gooddatescans,previously_known_good_maps)
-
                 newgoodmaptally = 0
                 for eachgooddatescan in gooddatescans:
                     if eachgooddatescan not in previously_known_good_maps:
                         newgoodmaptally+=1
 
                 if newgoodmaptally>0:
+                    print('\tNow Working With The Good Maps....')
                     make_coadds_metadata(eachregion,most_recent_XC,wave,weighted=True,goodbox=True,goodboxfilelist=goodmaps)
       
+            print('\nGenerating Souceinfo File Based On Weighted Calibration....')
             # The following generates the sourceinfo file and metadata file that uses the weighted calibration data! 
             make_coadds_metadata(eachregion,most_recent_XC,wave,weighted=True)
     
             # Generate noises_wave.txt -- To be used with the PScal - so this should refer to the NON ACcal, NON Wcal data -- 2021-05-14
-            
+            print('\nExtracting Noise Properties From Observations....')
             make_noise_file(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')),wave) 
             
             # This will give all the files necessary to run make*plottogether*py which uses getfamily
             # and will generate FCF unc family plots as well as a dictionary of datescans and Rel FCFS
             # -- the dictionary will also include the family member IDs
-            
-            make_FCFunc_family_plots(eachregion,wave,target_uncertainties,PScal_cutoff_date) 
+            print('\nFinding Families And Applying The PScal....')
+            make_FCFunc_family_plots(eachregion,wave,PScal_cutoff_date,find_new_family=False,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/')
             
             # Apply to the data.
             
@@ -369,12 +373,17 @@ if not alignment_ACcalonly:
             
             # Run local point source alignment as well to check Colton's Results (850 microns only)
             if wave == '850':
+                print('\nChecking The Pointing....')
                 pointing_check(most_recent_XC,wave)
-                
+            
+            print('\nGenerating Final Information Files...')    
             # Get calfactors files        
             generate_calfactors_file(most_recent_XC,eachregion,wave)
+            print('\nMaking Light Curves....')
             family_members('pointsource_results/'+eachregion+'/'+eachregion+'_PointSource_cal_info_dict_targunc5_'+wave+'.pickle',PScal_cutoff_date,wave)
             make_final_lightcurves('pointsource_results/'+eachregion+'/'+eachregion+'_'+wave+'_Wcal_sourcecat.bin',sorted(glob.glob('pointsource_results/'+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave)
             if wave == '450':
+                print('\tNow making Good Maps Light Curves....')
                 make_final_lightcurves('pointsource_results/'+eachregion+'/'+eachregion+'_'+wave+'_Wcal_GoodMaps_sourcecat.bin',sorted(glob.glob('pointsource_results/'+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave,GOODMAPS=True)
-    
+
+print("\n\n############\n############\nC'est Fini!\n############\n############\n\n") 
