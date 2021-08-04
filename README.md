@@ -1,4 +1,6 @@
-# XC_AC_PointSource_Pipeline
+# Transient Calibration Pipeline v2.0
+## Now with cross-correlation and a weighted relative flux calibration based on localised sources
+ 
 This is the pipeline that is used for the JCMT Transient Survey Calibration 2.0. 
 
 To begin, create directories for each region with the names:
