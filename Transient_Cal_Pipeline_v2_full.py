@@ -32,9 +32,9 @@ import glob
 waves = ['850','450']
 
 # List of Regions To Run. Must select from: IC348, NGC1333, NGC2024, NGC2071, OMC23, OPHCORE, SERPM, SERPS, DR21C, DR21N, DR21S, M17, M17SWex, S255
-regions_to_run = ['DR21C','DR21N','DR21S','M17','M17SWex']
+regions_to_run = ['SERPS','SERPM']
 # The directories containing the 850 micron, R3 images you would like to process in the same order as the region names above
-datadirs       = ['DR21C','DR21N','DR21S','M17','M17SWex']
+datadirs       = ['SERPS','SERPM']
 
 # Sets the number of XC/AC corrections to iteratively perform
 Number_of_Alignment_Iterations = 1 
@@ -326,6 +326,14 @@ if not alignment_ACcalonly:
 
         # Start the calibration pipeline    
         for wave in waves:        
+
+            if wave == '450':
+                mjypbmfactor     = mJy_beam_450_FCF 
+                mjyparcsecfactor = mJy_arcsec2_450_FCF
+            elif wave == '850':
+                mjypbmfactor     = mJy_beam_850_FCF
+                mjyparcsecfactor = mJy_arcsec2_850_FCF
+
             # Get most recent XC/AC iteration
             most_recent_XC = sorted(glob.glob(eachregion+'_XCalign_*'))[-1]
          
@@ -349,7 +357,7 @@ if not alignment_ACcalonly:
             print('\nGenerating Initial Sourceinfo File....')
 
             # The following generates the sourceinfo file that the weighted calibration uses! 
-            make_coadds_metadata(eachregion,most_recent_XC,wave)
+            make_coadds_metadata(eachregion,most_recent_XC,wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor)
 
             #################
             #################
@@ -406,11 +414,11 @@ if not alignment_ACcalonly:
                 # Produce info files for the 450 micron "Good Maps"
                 if newgoodmaptally>0:
                     print('\tNow Working With The Good Maps (sourceinfo file, metadata etc)....')
-                    make_coadds_metadata(eachregion,most_recent_XC,wave,weighted=True,goodbox=True,goodboxfilelist=goodmaps)
+                    make_coadds_metadata(eachregion,most_recent_XC,wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,weighted=True,goodbox=True,goodboxfilelist=goodmaps)
       
             print('\nGenerating Souceinfo File Based On Weighted Calibration....')
             # The following generates the sourceinfo file and metadata file that uses the weighted calibration data! 
-            make_coadds_metadata(eachregion,most_recent_XC,wave,weighted=True)
+            make_coadds_metadata(eachregion,most_recent_XC,wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,weighted=True)
    
             ########################
             ########################

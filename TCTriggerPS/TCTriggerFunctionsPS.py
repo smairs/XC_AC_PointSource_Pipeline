@@ -53,37 +53,18 @@ def TCCoadd(input_data,wave,GOODBOX=False):
     datescans_for_sorting = []
     for i in input_data:
         datescans_for_sorting.append(i.split('_'+wave)[0].split('_')[-2]+'_'+i.split('_'+wave)[0].split('_')[-1])
-    #print(i.split('_'+wave)[0].split('_')[-2]+'_'+i.split('_'+wave)[0].split('_')[-1])
     datescans_for_sorting = np.array(datescans_for_sorting)
     input_data = np.array(input_data)
 
+    #Make a distinction in the file name if these are the 450 micron "Good Weather" maps
     if GOODBOX:
         output_name     = input_data[np.argsort(datescans_for_sorting)][-1].split('.sdf')[0]+'_GoodMaps_coadd'
     else:
         output_name    =  input_data[np.argsort(datescans_for_sorting)][-1].split('.sdf')[0]+'_coadd'
 
-    #Correct our little "NGC2071 is actually NGC2068" faux pas
-    #if output_name.split('/')[-1].split('_')[0]=='NGC2071':
-    #    output_name = output_name.split('NGC2071')[0]+'NGC2068'+output_name.split('NGC2071')[1]
-
-
     # Run wcsmosaic
     
     kappa.wcsmosaic('^input_data.txt',output_name,ref=reference_file,lbnd='!',ubnd='!')
-
-    #Do not crop the file anymore, Instead, we are giving this function files which are already cropped and smoothed
-
-    ##Make the cropping parameter file.
-    #crop_parms = open('crop.ini', 'w')
-    #crop_parms.write('[CROP_SCUBA2_IMAGES]\n')
-    #crop_parms.write('CROP_METHOD = CIRCLE\n')
-    #crop_parms.write('MAP_RADIUS = 1200\n')
-    #crop_parms.close()
-
-    ##Perform the cropping.
-    #crop_command = '${ORAC_DIR}/etc/picard_start.sh CROP_SCUBA2_IMAGES '
-    #crop_command += '-log f -recpars crop.ini '+output_name+'.sdf'+' ${1+"$@"};'
-    #subprocess.call(crop_command, shell=True)
 
     # Clean up
     os.system('rm -f input_data.txt')
@@ -94,10 +75,11 @@ def TCCoadd(input_data,wave,GOODBOX=False):
 ##############################                                                                                                                                                                
 ##############################                                                                                                                                                                
 
-def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=False):
+def TCMetadata(input_data,region,output_dir,wave='850',mjypbmfactor=537000.0,mjyparcsecfactor=2340.0,WEIGHTED=False,GOODBOX=False):
     '''                    
     Read in the essential meta-data for each epoch:
     date, scan, zenith angle, tau225, calibration factor, noise, decimal Julian date
+    And generate a table file with this information
                                                                                     
     This can mostly be accomplished by accessing the fits header.
 
@@ -123,8 +105,6 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
     An astropy table containing the following columns:
     UTdates, julian_dates, scans, elevs, tau225s, noises, noise_units
 
-    UNDER DEVELOPMENT: Adding a column for Relative Flux Calibration Factors
-
     ###################
     ###################
     '''                                                                             
@@ -137,20 +117,14 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
     import numpy as np                                                              
     import os                                                                       
     import datetime
+    import time
     import glob
 
     # First, check to see if a metadata table already exists. This is one of the longest steps in
-    # the TCTrigger pipeline - so if a table already exists, don't reinvent the wheel
+    # the TCTrigger pipeline - so if a table already exists, don't reinvent the wheel, use the information
+    # that has been previously generated
 
-    #print('\n\n\n',input_data,'\n\n\n')
-
-    if wave == '450':
-        mjypbmfactor = 491000
-        mjyparcsecfactor = 4710
-    elif wave == '850':
-        mjypbmfactor = 537000
-        mjyparcsecfactor = 2340
-
+    # Sort out what kind of maps we are dealing with: Uncal? Wcal? Good Maps?
     if WEIGHTED:
         if GOODBOX:
             fileending = wave+"_Wcal_GoodMaps_metadata.txt"
@@ -163,11 +137,13 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
         ind1 = -5
     existing_metadata_file = sorted(list(glob.glob(output_dir+"/*"+fileending)))
 
+    # If we have previously existing data, read in the existing table file
     if len(existing_metadata_file)>0:
         table_already_exists = True 
 
         t = Table.read(existing_metadata_file[-1],format='ascii') # The list of metadata files has been sorted, above
 
+        # Sort out which data is new and actually needs to be analysed versus what can just be read
         new_input_data = []
         for eachinput in sorted(list(input_data)):
             datescanthisinput = eachinput.split('_')[ind1]+'_'+eachinput.split('_')[ind1+1]
@@ -175,24 +151,13 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
                 #print('NEW DATA!',eachinput)
                 new_input_data.append(eachinput)
 
+        # Compile new input data list and make sure there is something new to look at!
         input_data = new_input_data
         if len(new_input_data)>0:
             anythingnew = 1
         else:
             anythingnew = 0
-
-        ## If the table already exists, check to see if we are adding any new information, if not, skip this whole function!
-        #anythingnew = 1
-        #t = Table.read(existing_metadata_file[-1],format='ascii') # The list of metadata files has been sorted, above
-        #print('\n\n\n',t['Name'][-1],'\n\n\n')
-        #print(np.array(input_data)[np.argsort(np.array(input_data))][-1].split('_'))
-        #if t['Name'][-1] == region+'_'+np.array(input_data)[np.argsort(np.array(input_data))][-1].split('_')[-6]+'_'+np.array(input_data)[np.argsort(np.array(input_data))][-1].split('_')[-5]+'_'+wave:
-        #    anythingnew = 0
-        #    input_data = []
-	## If the table already exists and we are adding something new, just get information from the files not yet included and append them to the existing table
-        #if anythingnew == 1:
-        #    input_data = [np.array(input_data)[np.argsort(np.array(input_data))][-1]]
-        #existing_metadata_file = np.array(existing_metadata_file)[np.argsort(np.array(existing_metadata_file))]
+    # If there is no existing data, we just have to run the full program from scratch on all observations
     else:
         table_already_exists = False
 
@@ -208,20 +173,21 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
     noises       = []
     noise_units  = []
 
-    dummyID = 0
     # For each file, run SCUBA2_MAPSTATS to get all the info we need, 
     # less the relative FCF                                           
 
-    for eachfile in input_data:
+    for dummyID,eachfile in enumerate(input_data):
 
-        #print('\n\n\n\n',eachfile,'\n\n\n\n')
         dummyID=dummyID+1
+
+        # Run mapstats on the observation
         picard_out = picard.scuba2_mapstats(list([eachfile]))
-        #print('\n\n\n\n',picard_out,'\n\n\n\n')
+        # A few log files are produced, so find the right one to harvest information from
         picard_logfiles = picard_out.logfiles
         for eachlog in picard_logfiles:
             if 'log.mapstats' in eachlog:
                 mapstats_logfile = eachlog
+        # Load in the mapstats logfile information
         metadata   = np.loadtxt(mapstats_logfile,dtype={'names':('UT','HST','Obs','Source','Mode','Filter',
                                                                      'El','Airmass','Trans','Tau225','Tau','t_elapsed',
                                                                      't_exp','rms','rms_units','nefd','nefd_units','RA','DEC',
@@ -231,62 +197,23 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
 
         # Put the dates in the correct format to be converted to JD
         # or to be easily read in by Python's astropy.time.Time function
-        source     = metadata['Source']                                  
-        if len(str(int(metadata['Obs']))) == 1:
-            scan   = '0000'+str(int(metadata['Obs']))
-        elif len(str(int(metadata['Obs']))) == 2:
-	            scan   = '000'+str(int(metadata['Obs']))
-        elif len(str(int(metadata['Obs']))) == 3:
-	            scan   = '00'+str(int(metadata['Obs']))
-        elif len(str(int(metadata['Obs']))) == 4:
-	            scan   = '0'+str(int(metadata['Obs']))
-        elif len(str(int(metadata['Obs']))) == 5:
-	            scan   = str(int(metadata['Obs']))
+        source     = metadata['Source']
+        scan       = str(int(metadata['Obs'])).zfill(5)
         eachUTdate = str(metadata['UT'])                                                                                                                  
         year       = eachUTdate[0:4]                                                                                                                      
         month      = eachUTdate[4:6]                                                                                                                      
         day        = eachUTdate[6:8]                                                                                                                      
-        hours      = float('0.'+eachUTdate.split('.')[-1])*24                                                                                             
-
-
-        hour       = str(int(np.floor(hours)))                                                                                                            
-        if int(hour)>0:
-            minutes    = (hours % float(hour))*60                                                                                                             
-        else:
-            minutes    = hours*60
-
-
-        minute     = str(int(np.floor(minutes)))
-        if int(minute)>0:
-            second     = str(round((minutes % float(minute))*60,4))                                                                                           
-        else:
-            second     = str(round(minutes*60,4))
-        if float(hour)<10: 
-            isotUThour = '0'+hour
-        else:
-            isotUThour = hour
-
-
-        if float(minute)<10:
-            isotUTminute = '0'+minute
-        else:
-            isotUTminute = minute
-
-        if float(second)<10:
-            isotUTsecond = '0'+second
-        else:
-            isotUTsecond = second
+        hours      = float('0.'+eachUTdate.split('.')[-1])*24
+        isoTime    = str(time.strftime("%H:%M:%S",time.gmtime(hours*3600)))
 
         # Construct the astropy.table columns
         IDs.append(dummyID)
         names.append(region+'_'+year+month+day+'_'+scan+'_'+wave)
-        UTdates.append(year+'-'+month+'-'+day+'T'+isotUThour+':'+isotUTminute+':'+isotUTsecond)
-        #print('\n\n\n',year,month,day,isotUThour,isotUTminute,isotUTsecond,'\n\n\n')
-        julian_dates.append(str(Time(year+'-'+month+'-'+day+'T'+isotUThour+':'+isotUTminute+':'+isotUTsecond,format='isot',scale='utc').jd))
+        UTdates.append(year+'-'+month+'-'+day+'T'+isoTime)
+        julian_dates.append(str(Time(year+'-'+month+'-'+day+'T'+isoTime,format='isot',scale='utc').jd))
         scans.append(str(int(metadata['Obs'])))
         elevs.append(str(int(metadata['El'])))
         tau225s.append(str(metadata['Tau225']))
-        #noises.append(str(round(mjypbmfactor*metadata['rms'],2))) # 2021-05-26 -- I guess the variance map doesn't get updated when I cmult?!
         noises.append(str(round(float(metadata['rms']),2))) # 2021-07-21 -- NOISES OFF BY THE mjypbmfactor!!
         noise_units.append(str(metadata['rms_units']))
 
@@ -295,7 +222,7 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
         if anythingnew==1:
             for eachname,eachUTdate,eachJD,eachscan,eachEL,eachTau225,eachnoise,eachnoiseu in zip(names, UTdates, julian_dates, scans, elevs, tau225s, noises, noise_units):
                 t.add_row([t['ID'][-1]+1, [eachname], [eachUTdate], [eachJD], [eachscan], [eachEL], [eachTau225], [eachnoise], [eachnoiseu]])
-            #t.add_row([t['ID'][-1]+1, names, UTdates, julian_dates, scans, elevs, tau225s, noises, noise_units])
+
     # Build the Table if it doesn't already exist:
     else:
         t = Table([IDs, names, UTdates, julian_dates, scans, elevs, tau225s, noises, noise_units], names=('ID', 'Name', 'UT', 'JD', 'Obs', 'Elev', 'Tau225', 'RMS', 'RMS_unit'), meta={'name': 'Meta Data Table'})
@@ -304,7 +231,6 @@ def TCMetadata(input_data,region,output_dir,wave='850',WEIGHTED=False,GOODBOX=Fa
         # Get today's date into a string
         now   = datetime.datetime.now()
         today = '{:02d}'.format(now.year)+'{:02d}'.format(now.month)+'{:02d}'.format(now.day)
-        #apascii.write(t,region+'_metadata_'+today+'_'+wave+'.txt')
 
         # Get most recent file's date for name
         mostrecentdate = np.array(input_data)[np.argsort(np.array(input_data))][-1].split('/')[-1].split('_')[1]
@@ -547,7 +473,6 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     previous_results_list = sorted(glob.glob(output_dir+'/*'+fileending))
     previous_results_thisregion = []
     if len(previous_results_list)>0:
-        #print('\n\n\n\n\nPREVIOUS SOURCEINFO FILE FOUND\n\n\n\n\n')
         previous_results=True
         previous_results_thisregion.append(previous_results_list[-1])
 
@@ -559,7 +484,6 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
            if eachcolname[0:2]=='f_':
                datesinfile.append(eachcolname.split('_')[1])
                alldatescans.append(eachcolname.split('_')[1]+'_'+eachcolname.split('_')[2])
-       #print('DATES IN PREVIOUS FILE:',datesinfile,'\n\n\n')
 
     peak_cat    = apfits.getdata(peakcat)
 
@@ -599,20 +523,6 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
 
     # Now loop over each file --- THIS WILL APPEND COLUMNS AT THE END - SO IF WE ARE RE-RUNNING OLD DATES THIS WILL PUT THE LIST OUT OF ORDER!
     for eachfile in input_data:
-#        myndf    = Ndf(eachfile)
-#
-#        # Make a line break separated string of the header
-#        myndf_string_list = []
-#        for i in myndf.head['FITS']:
-#            myndf_string_list.append(i.decode('UTF-8'))
-#
-#        # myndf.head['FITS'] is a fits header that is given as a list of strings
-#        # so split up the strings into values and comments and load it into a
-#        # standard astropy fits header
-#
-#        hdr = apfits.Header.fromstring('\n'.join(myndf_string_list), sep='\n')
-
-        # "Ndf" not working (bug with unknown fix time), so use convert and get the header from a fits file
 
         convert.ndf2fits(eachfile,out=eachfile.split('.sdf')[0]+'.fits') 
 
@@ -664,15 +574,6 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
                 results_dict[peak_cat['ID'][eachsource]]['dates'].append(jd)
                 results_dict[peak_cat['ID'][eachsource]]['dates_reg'].append(date_reg)
                 results_dict[peak_cat['ID'][eachsource]]['scan'].append(scan)
-        #else:
-        #    for eachsource in range(len(peak_cat)):
-        #        peak_flux = sourceinfotable['f_'+date_reg+'_'+scan][eachsource]
-        #
-        #        # Save the peak fluxes and their associated dates for this source, do this for every source
-        #        results_dict[peak_cat['ID'][eachsource]]['peakfluxes'].append(peak_flux)
-        #        results_dict[peak_cat['ID'][eachsource]]['dates'].append(jd)
-        #        results_dict[peak_cat['ID'][eachsource]]['dates_reg'].append(date_reg)
-        #        results_dict[peak_cat['ID'][eachsource]]['scan'].append(scan)
 
     # Return the peak fluxes and dates organised by each source
     if WEIGHTED:

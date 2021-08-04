@@ -1,4 +1,4 @@
-def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, trigger_thresh = 5, brightness_thresh = 0.0, sd_thresh = 2,wave='850',WEIGHTED=False,GOODBOX=False,EXTRASOURCES=False,ONLYEXTRA=False):
+def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, trigger_thresh = 5, brightness_thresh = 0.0, sd_thresh = 2,wave='850',mjypbmfactor=537000.0,mjyparcsecfactor=2340.0,WEIGHTED=False,GOODBOX=False,EXTRASOURCES=False,ONLYEXTRA=False):
     '''
     This program loads all of the functions defined in TCTriggerFunctions.py
     and exectues them in their correct order such that we are able to
@@ -145,7 +145,7 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 	###### Build Metadata Table ######
         ##################################
 
-        metadata = TCMetadata(input_data,region,output_dir+'/'+region,wave=wave,WEIGHTED=WEIGHTED,GOODBOX=GOODBOX)
+        metadata = TCMetadata(input_data,region,output_dir+'/'+region,wave=wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,WEIGHTED=WEIGHTED,GOODBOX=GOODBOX)
    
         #print('\n\n')
         #print(metadata)
