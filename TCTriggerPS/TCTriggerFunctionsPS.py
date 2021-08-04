@@ -221,7 +221,9 @@ def TCMetadata(input_data,region,output_dir,wave='850',mjypbmfactor=537000.0,mjy
     if table_already_exists:
         if anythingnew==1:
             for eachname,eachUTdate,eachJD,eachscan,eachEL,eachTau225,eachnoise,eachnoiseu in zip(names, UTdates, julian_dates, scans, elevs, tau225s, noises, noise_units):
-                t.add_row([t['ID'][-1]+1, [eachname], [eachUTdate], [eachJD], [eachscan], [eachEL], [eachTau225], [eachnoise], [eachnoiseu]])
+                # Make sure we don't get any duplicates
+                if eachname not in t['Name'].tolist():
+                    t.add_row([t['ID'][-1]+1, [eachname], [eachUTdate], [eachJD], [eachscan], [eachEL], [eachTau225], [eachnoise], [eachnoiseu]])
 
     # Build the Table if it doesn't already exist:
     else:
@@ -370,29 +372,35 @@ def TCYSOcompare(peakcat,protocatalogue,diskcatalogue,region,wave='850'):
     # For each source in the FellWalker catalogue,
     for eachsource in range(len(peak_cat)):
 
+        # Save information about the source
         peak_int_ind.append(eachsource)
+        peak_ind.append(peak_cat['ID'][eachsource])
+        ra.append(peak_cat['RA'][eachsource])
+        dec.append(peak_cat['DEC'][eachsource])
 
-        # Identify the index of the closest protostar in the protostar catalogue
-        closest_YSO_ind = (np.sqrt(np.abs((proto_cat['ra'] - peak_cat['RA'][eachsource])*np.cos(peak_cat['DEC'][eachsource]*np.pi/180.0))**2.0+np.abs(proto_cat['dec'] - peak_cat['DEC'][eachsource])**2.0)).argmin()
+        ##
+        #Protostars
+        ##
 
         # Calculate the distance to each protostar in the protostar catalogue
-        closest_YSO_dists   = 3600.0*np.sqrt(np.abs((proto_cat['ra'] - peak_cat['RA'][eachsource])*np.cos(peak_cat['DEC'][eachsource]*np.pi/180.0))**2.0+np.abs(proto_cat['dec'] - peak_cat['DEC'][eachsource])**2.0) # In arcseconds!
+        closest_YSO_dists = 3600.0*np.sqrt(np.abs((proto_cat['ra'] - peak_cat['RA'][eachsource])*np.cos(peak_cat['DEC'][eachsource]*np.pi/180.0))**2.0+np.abs(proto_cat['dec'] - peak_cat['DEC'][eachsource])**2.0) # In arcseconds!
+
+        # Identify the index of the closest protostar in the protostar catalogue
+        closest_YSO_ind =  closest_YSO_dists.argmin()
 
         # Save the closest protostar distance and the Megeath et al 2012 style Class (P, F, R)
         proto_distance.append(closest_YSO_dists[closest_YSO_ind])
         proto_class.append(proto_cat['class'][closest_YSO_ind])
 
-        # Save information about the source
-        peak_ind.append(peak_cat['ID'][eachsource])
-        ra.append(peak_cat['RA'][eachsource])
-        dec.append(peak_cat['DEC'][eachsource])
-
-
-        # Identify the index of the closest disc in the disc catalogue
-        closest_YSO_ind = (np.sqrt(np.abs((disk_cat['ra'][classII_ind] - peak_cat['RA'][eachsource])*np.cos(peak_cat['DEC'][eachsource]*np.pi/180.0))**2.0+np.abs(disk_cat['dec'][classII_ind] - peak_cat['DEC'][eachsource])**2.0)).argmin()
+        ##
+        # Disks
+        ##
 
         # Calculate the distance to each disc in the disc catalogue
         closest_YSO_dists   = 3600.0*np.sqrt(np.abs((disk_cat['ra'][classII_ind] - peak_cat['RA'][eachsource])*np.cos(peak_cat['DEC'][eachsource]*np.pi/180.0))**2.0+np.abs(disk_cat['dec'][classII_ind] - peak_cat['DEC'][eachsource])**2.0) # In arcseconds!
+
+        # Identify the index of the closest disc in the disc catalogue
+        closest_YSO_ind = closest_YSO_dists.argmin()
 
         # Save the closest disc distance and the Megeath et al 2012 style Class (D)
         disk_distance.append(closest_YSO_dists[closest_YSO_ind])
@@ -456,12 +464,12 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     from astropy.table import Table
     from starlink import kappa              
     from starlink import convert
-    #from starlink.ndfpack import Ndf        
     import os
     import pickle
     import glob
 
-    # Check to see if a previous sourceinfo dict has been created by TCCheck4Variables:
+    # Check to see if a previous sourceinfo dict has been created by TCCheck4Variables.
+    # If it has, copy the information over that already exists so we don'thave to calculate it again
     previous_results=False
     if WEIGHTED:
         if GOODBOX:
@@ -485,6 +493,7 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
                datesinfile.append(eachcolname.split('_')[1])
                alldatescans.append(eachcolname.split('_')[1]+'_'+eachcolname.split('_')[2])
 
+    # Read in the peak catalogue
     peak_cat    = apfits.getdata(peakcat)
 
     # Initialise a dictionary to keep track of the data sensically.
@@ -516,12 +525,8 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
                 results_dict[peak_cat['ID'][eachsource]]['dates'].append(jd)
                 results_dict[peak_cat['ID'][eachsource]]['dates_reg'].append(date_reg)
                 results_dict[peak_cat['ID'][eachsource]]['scan'].append(scan)
- 
-        
 
-
-
-    # Now loop over each file --- THIS WILL APPEND COLUMNS AT THE END - SO IF WE ARE RE-RUNNING OLD DATES THIS WILL PUT THE LIST OUT OF ORDER!
+    # Now loop over all input_data and ensure we don't add duplicate lines 
     for eachfile in input_data:
 
         convert.ndf2fits(eachfile,out=eachfile.split('.sdf')[0]+'.fits') 
@@ -530,22 +535,13 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
 
         os.system('rm -f '+eachfile.split('.sdf')[0]+'.fits')
 
-        # Obtain the UT date and the Julian Date
-        date = hdr['DATE-OBS']
-        scani= hdr['OBSNUM']
-        if len(str(scani))==1:
-            scan = "0000"+str(scani)
-        elif len(str(scani)) == 2:
-            scan = "000"+str(scani)
-        elif len(str(scani)) == 3:
-            scan = "00"+str(scani)
-        elif len(str(scani)) == 4:
-            scan = "0"+str(scani)
-        elif len(str(scani)) == 5:
-            scan = str(scani)
-        date_reg=date[0:4]+date[5:7]+date[8:10]
-        jd  = Time(date,format='isot',scale='utc').jd
+        # Obtain the datescans and the UT date and the Julian Date
+        date     = hdr['DATE-OBS']
+        scan     = str(int(hdr['OBSNUM'])).zfill(5)
+        date_reg =date[0:4]+date[5:7]+date[8:10]
+        jd       = Time(date,format='isot',scale='utc').jd
 
+        # Ensure no duplicates sneak through
         if date_reg not in datesinfile:
     
             # For each soure in the FellWalker catalogue,
@@ -554,19 +550,12 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
                 # Get the PeakX and peakY coordinates in a form Starlink's KAPPA APERADD function will understand (sexigesmal)
                 peak_coord_degrees = SkyCoord(peak_cat['RA'][eachsource],peak_cat['DEC'][eachsource],frame='icrs',unit='deg')
                 peakX              = str(int(peak_coord_degrees.ra.hms.h))+':'+str(int(peak_coord_degrees.ra.hms.m))+':'+str(peak_coord_degrees.ra.hms.s)
-                # peak_coord_degrees.dec.dms.d might come out to be: -0.0. But int(-0.0) = 0 and we lose the parity information. Fix that.
+                peakY              = str(int(peak_coord_degrees.dec.dms.d))+':'+str(abs(int(peak_coord_degrees.dec.dms.m)))+':'+str(abs(peak_coord_degrees.dec.dms.s))
+                # For peakY: peak_coord_degrees.dec.dms.d might come out to be: -0.0. But int(-0.0) = 0 and we lose the parity information. I fix that below
+                # in maybe a roundabout way
                 if int(peak_coord_degrees.dec.dms.d) == 0:
-                    isneg     = 0
-                    firstchar = str(peak_coord_degrees.dec.dms.d)[0]
-                    if firstchar == '-':
-                        isneg = 1
-                    
-                    if isneg == 0:
-                        peakY              = str(int(peak_coord_degrees.dec.dms.d))+':'+str(abs(int(peak_coord_degrees.dec.dms.m)))+':'+str(abs(peak_coord_degrees.dec.dms.s))
-                    else:
-                        peakY              = '-'+str(int(peak_coord_degrees.dec.dms.d))+':'+str(abs(int(peak_coord_degrees.dec.dms.m)))+':'+str(abs(peak_coord_degrees.dec.dms.s))
-                else:
-                    peakY              = str(int(peak_coord_degrees.dec.dms.d))+':'+str(abs(int(peak_coord_degrees.dec.dms.m)))+':'+str(abs(peak_coord_degrees.dec.dms.s))
+                    if str(peak_coord_degrees.dec.dms.d)[0] == '-':
+                        peakY = '-'+peakY
     
                 # Obtain the peak flux by placing an aperture on that location - THIS IS THE BIGGEST TIME SINK OF THE TRIGGER CODE
                 peak_flux = kappa.aperadd(eachfile,centre='"'+peakX+','+peakY+'"',diam=aperture_diam).total
@@ -590,10 +579,12 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
 ############################
 ############################
 
-def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_thresh = 0.0,sd_thresh = 4, wave ='850',WEIGHTED=False,GOODBOX=False): 
+def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_thresh = 0.0,sd_thresh = 4, wave ='850',fidnoiseterm=14,fidcalterm=0.02,WEIGHTED=False,GOODBOX=False): 
     '''
     This code uses data from TCTrackSources and TCYSOcompare
     to hunt for variability in the newly obtained images.
+
+    I.e. Creates the sourceinfo file!
 
     ####################
 
@@ -639,6 +630,12 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
     import datetime
     import matplotlib.pyplot as plt
 
+    # Define the fiducial (expected) Standard Deviation of a non-varying light curve
+    # for a source of a particular brightness:
+
+    def fideq(flux,noiseterm=14,calterm=0.02):
+        return(np.sqrt(noiseterm**2+(calterm*flux)**2))
+
     # First, correlate Source IDs with known special names
     # so when we send out the announcement - we'll know, for instance,
     # if the source is EC53
@@ -663,15 +660,12 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
     sourcename_fortable = list(source_dict.keys())[0]  
     number_of_epochs    = len(source_dict[sourcename_fortable]['dates'])
     number_of_sources   = len(list(source_dict.keys()))
-    #print('\n\n\n\nSOURCE_DICT DATES IN IMPORTANT CODE',source_dict[sourcename_fortable]['dates'],'\n\n\n\n')
-
 
     # Get today's date into a string
     now   = datetime.datetime.now()
     today = '{:02d}'.format(now.year)+'{:02d}'.format(now.month)+'{:02d}'.format(now.day)
 
     # Generate a tuple of the names we need for the table (different every time because we are adding flux values when new epochs are observed)
-
     name_list=['Index','ID','RA','DEC','proto_dist','disk_dist']
     dtype_list=['i4','<U23','f8','f8','f8','f8',]
 
@@ -679,10 +673,12 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
         name_list.append(eachname)
         dtype_list.append('f8')
 
+    # Generate keys for the flux obtained on each date
     for eachflux in range(len(np.array(source_dict[sourcename_fortable]['peakfluxes'])[np.argsort(source_dict[sourcename_fortable]['dates'])])):
         name_list.append('f_'+sorted(source_dict[sourcename_fortable]['dates_reg'])[eachflux]+'_'+np.array(source_dict[sourcename_fortable]['scan'])[np.argsort(source_dict[sourcename_fortable]['dates'])][eachflux])
         dtype_list.append('f8')
 
+    # Generate keys for the Z-score of each flux observation
     for eachflux in range(len(np.array(source_dict[sourcename_fortable]['peakfluxes'])[np.argsort(source_dict[sourcename_fortable]['dates'])])):
         name_list.append('abs(f_'+sorted(source_dict[sourcename_fortable]['dates_reg'])[eachflux]+'_'+np.array(source_dict[sourcename_fortable]['scan'])[np.argsort(source_dict[sourcename_fortable]['dates'])][eachflux]+'-mean_peak_flux)/sd_peak_flux')
         dtype_list.append('f8')
@@ -693,20 +689,21 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
     # Generate an astropy table:
     t = Table(names=name_tuple,dtype=dtype_tuple)
 
-    trigger_messages_stochastic       = []
-    trigger_messages_stochastic_newind= []
-    trigger_messages_stochastic_epochs= []
+    # Get empty lists ready to contain messages/information if we do find variables
+    trigger_messages_stochastic        = []
+    trigger_messages_stochastic_newind = []
+    trigger_messages_stochastic_epochs = []
+    trigger_messages_fiducial          = []
 
-    trigger_messages_fiducial         = []
-
-    triggered_sources = []
+    triggered_sources                  = []
 
     # Initialise the file that will contain information about each identified variable
     # Get most recent file's date for name
-    mostrecentdate = sorted(source_dict[sourcename_fortable]['dates_reg'])[-1]#np.array(input_data)[np.argsort(np.array(input_data))][-1].split('/')[-1].split('_')[1]
-    mostrecentscan = np.array(source_dict[sourcename_fortable]['scan'])[np.argsort(np.array(source_dict[sourcename_fortable]['dates_reg']))][-1]#np.array(input_data)[np.argsort(np.array(input_data))][-1].split('/')[-1].split('_')[2]
-    variables_file    = open(region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_variables.txt','w')
+    mostrecentdate = sorted(source_dict[sourcename_fortable]['dates_reg'])[-1]
+    mostrecentscan = np.array(source_dict[sourcename_fortable]['scan'])[np.argsort(np.array(source_dict[sourcename_fortable]['dates_reg']))][-1]
 
+    # Variables file contains the message that will be emailed out and saved when the pipeline is processed through the EAO system
+    variables_file    = open(region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_variables.txt','w')
     variables_file.write('Hello Everyone,\n\nAs of '+today+', the '+region+' region has '+str(number_of_epochs)+' Transient Survey epochs.\n\nWe are tracking '+str(number_of_sources)+' sources in this region.\n\nHere are the latest results from the automatic variability detection pipeline:')
 
     # For each source, calculate the mean flux and standard deviation
@@ -715,13 +712,10 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
         source_dict[eachsource]['mean']        = np.average(source_dict[eachsource]['peakfluxes'])
         source_dict[eachsource]['sd']          = np.sqrt(sum((source_dict[eachsource]['peakfluxes']-np.average(source_dict[eachsource]['peakfluxes']))**2.0)/(len(source_dict[eachsource]['peakfluxes'])-1))
         source_dict[eachsource]['sd_rel']      = np.sqrt(sum((source_dict[eachsource]['peakfluxes']-np.average(source_dict[eachsource]['peakfluxes']))**2.0)/(len(source_dict[eachsource]['peakfluxes'])-1))/np.average(source_dict[eachsource]['peakfluxes'])
-        if wave == '850':
-            source_dict[eachsource]['sd_fiducial'] = np.sqrt(14**2.0+(0.02*np.average(source_dict[eachsource]['peakfluxes']))**2.0) # mJy -- should be 14 rather than 0.014
-        if wave == '450':
-            source_dict[eachsource]['sd_fiducial'] = np.sqrt((0.05*np.average(source_dict[eachsource]['peakfluxes']))**2.0) # mJy -- 5\% cutoff indicates the faint sources are noisy and we don't know what they are necessarily doing on the sd vs mean_flux (in linear,xlog space) graph
+        source_dict[eachsource]['sd_fiducial'] = fideq(np.average(source_dict[eachsource]['peakfluxes']),noiseterm=fidnoiseterm,calterm=fidcalterm)
 
-        #The diagonal elements of cov are the variances of the coefficients in z, i.e. np.sqrt(np.diag(cov)) gives you the standard deviations of the coefficients. You can use the standard deviations to estimate the probability that the absolute error exceeds a certain value, e.g. by inserting the standard deviations in the uncertainty propagation calculation. If you use e.g. 3*standard deviations in the uncertainty propagation, you calculate the error which will not be exceeded in 99.7% of the cases.
-
+        # Measure Normalised peak flux (normalised by average) versus days. Get a linear relationship
+        # The diagonal elements of cov are the variances of the coefficients in z, i.e. np.sqrt(np.diag(cov)) gives you the standard deviations of the coefficients. You can use the standard deviations to estimate the probability that the absolute error exceeds a certain value, e.g. by inserting the standard deviations in the uncertainty propagation calculation. If you use e.g. 3*standard deviations in the uncertainty propagation, you calculate the error which will not be exceeded in 99.7% of the cases.
         p,cov           = np.polyfit(np.array(sorted(source_dict[eachsource]['dates']))-sorted(source_dict[eachsource]['dates'])[0],np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]/np.average(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]),1,cov=True,full=False)
 
         slope                = p[0]
@@ -744,10 +738,11 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
 #########
 #########
 
-        # The actual trigger! abs(flux - flux_m)/SD > trigger_thresh
+        # The actual trigger! z-score = abs(flux - flux_m)/SD > trigger_thresh
         
         for eachmeasurement in range(len(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))])):
 
+        # Don't include the current epoch in the mean and SD calculations 
             peakfluxes_not_including_current_measurement = []
             for eachpeakflux in range(len(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))])):
                 if eachpeakflux != eachmeasurement:
@@ -755,21 +750,20 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
 
             peakfluxes_not_including_current_measurement = np.array(peakfluxes_not_including_current_measurement)
             mean_not_including_current_measurement       = np.average(peakfluxes_not_including_current_measurement)
-            SD_not_including_current_measurement         = np.sqrt(sum((peakfluxes_not_including_current_measurement-mean_not_including_current_measurement)**2.0)/(len(peakfluxes_not_including_current_measurement)-1))
+            SD_not_including_current_measurement         = np.std(peakfluxes_not_including_current_measurement,ddof=1)
 
+            # Find z-score! 
             trigger = abs(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))][eachmeasurement] - mean_not_including_current_measurement)/SD_not_including_current_measurement
  
             source_dict[eachsource]['trigger'].append(trigger)
 
-            if wave == '850':
-                fiducial_model_SD = np.sqrt(14**2.0+(0.02*source_dict[eachsource]['mean'])**2.0) # mJy - should be 14 rather than 0.014
-            if wave == '450':
-                fiducial_model_SD = np.sqrt((0.05*source_dict[eachsource]['mean'])**2.0) # mJy - 5\% contraint right now for sd vs mean peak flux graph (linear/log) -- just saying we don't know what is happening for the faint sources at 450 yet, too noisy.
-
+            fiducial_model_SD = fideq(source_dict[eachsource]['mean'],noiseterm=fidnoiseterm,calterm=fidcalterm)
+            
             # Check to see if any of the peak flux measurements on any date have a large variance
 
             if trigger>=trigger_thresh:
-	        # If triggered, save the source ID, print the information to the screen, and add to the variables_REGION_DATE.txt text file
+                
+                # If triggered, save the source ID, print the information to the screen, and add to the variables_REGION_DATE.txt text file
 
                 triggered_sources.append(eachsource)
 
@@ -804,11 +798,7 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
 
         # Now check for the other indicator of variability - a large relative standard deviation relative to the fiducial model in Doug's Midproject paper (like, for instance, EC53)
         # Also, a birghtness_threshold is coded in just in case we get too many spurious non-detections from faint sources and we want to get rid of those
-
-        if wave == '850':
-            fiducial_model_SD = np.sqrt(14**2.0+(0.02*source_dict[eachsource]['mean'])**2.0) # mJy -- should be 14 rather than 0.014
-        if wave == '450':
-            fiducial_model_SD = np.sqrt((0.05*source_dict[eachsource]['mean'])**2.0) # mJy - 5\% contraint right now for sd vs mean peak flux graph (linear/log) -- just saying we don't know what is happening for the faint sources at 450 yet, too noisy.
+        fiducial_model_SD = fideq(source_dict[eachsource]['mean'],noiseterm=fidnoiseterm,calterm=fidcalterm)
         
         source_dict[eachsource]['sd_fiducial'] = fiducial_model_SD
 
@@ -819,14 +809,15 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
                 triggered_sources.append(eachsource)
 
                 if eachsource in special_names_keys:
-
-                    trigger_message = '\n\n####################\n####################\n\nSource '+special_names[eachsource]+' (index = '+str(source_dict[eachsource]['index'])+') has an SD = '+str(round(source_dict[eachsource]['sd'],4))+' over all peak flux measurements.\n\nThis is greater than the fiducial SD model would predict for a mean brightness of '+str(round(source_dict[eachsource]['mean'],3))+' Jy/beam by a factor of '+str(round(source_dict[eachsource]['sd']/fiducial_model_SD,2))+'.\nThe current SD/SD_fiducial threshold is set to '+str(sd_thresh)+'.\nThis source is located at (RA, dec) = ('+str(ra)+','+str(dec)+')\nThe nearest protostar is '+str(round(proto_dist,2))+'" away and the nearest disc is '+str(round(disk_dist,2))+'" away.\n\nMean Peak Brightness = '+str(source_dict[eachsource]['mean'])+'\nSD                   = '+str(source_dict[eachsource]['sd'])+'\nSD_fid               = '+str(fiducial_model_SD)+'\nSD/SD_fid            = '+str(round(source_dict[eachsource]['sd']/fiducial_model_SD,5))+'\n\n####################\n####################\n\n'
-
+                    sourcename_toprint = special_names[eachsource]
                 else:
+                    sourcename_toprint = str(eachsource)
 
-                    trigger_message = '\n\n####################\n####################\n\nSource '+str(eachsource)+' (index = '+str(source_dict[eachsource]['index'])+') has an SD = '+str(round(source_dict[eachsource]['sd'],4))+' over all peak flux measurements.\n\nThis is greater than the fiducial SD model would predict for a mean brightness of '+str(round(source_dict[eachsource]['mean'],3))+' Jy/beam by a factor of '+str(round(source_dict[eachsource]['sd']/fiducial_model_SD,2))+'.\nThe current SD/SD_fiducial threshold is set to '+str(sd_thresh)+'.\nThis source is located at (RA, dec) = ('+str(ra)+','+str(dec)+')\nThe nearest protostar is '+str(round(proto_dist,2))+'" away and the nearest disc is '+str(round(disk_dist,2))+'" away.\n\nMean Peak Brightness = '+str(source_dict[eachsource]['mean'])+'\nSD                   = '+str(source_dict[eachsource]['sd'])+'\nSD_fid               = '+str(fiducial_model_SD)+'\nSD/SD_fid            = '+str(round(source_dict[eachsource]['sd']/fiducial_model_SD,5))+'\n\n####################\n####################\n\n'
+                trigger_message = '\n\n####################\n####################\n\nSource '+sourcename_toprint+' (index = '+str(source_dict[eachsource]['index'])+') has an SD = '+str(round(source_dict[eachsource]['sd'],4))+' over all peak flux measurements.\n\nThis is greater than the fiducial SD model would predict for a mean brightness of '+str(round(source_dict[eachsource]['mean'],3))+' Jy/beam by a factor of '+str(round(source_dict[eachsource]['sd']/fiducial_model_SD,2))+'.\nThe current SD/SD_fiducial threshold is set to '+str(sd_thresh)+'.\nThis source is located at (RA, dec) = ('+str(ra)+','+str(dec)+')\nThe nearest protostar is '+str(round(proto_dist,2))+'" away and the nearest disc is '+str(round(disk_dist,2))+'" away.\n\nMean Peak Brightness = '+str(source_dict[eachsource]['mean'])+'\nSD                   = '+str(source_dict[eachsource]['sd'])+'\nSD_fid               = '+str(fiducial_model_SD)+'\nSD/SD_fid            = '+str(round(source_dict[eachsource]['sd']/fiducial_model_SD,5))+'\n\n####################\n####################\n\n'
 
                 trigger_messages_fiducial.append(trigger_message)
+
+                # Make a plot to send with the email/notification
 
                 plt.scatter(np.array(range(len(np.array(source_dict[eachsource]['dates_reg'])[np.argsort(np.array(source_dict[eachsource]['dates']))])))+1,np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))],label=eachsource.replace('_',''))
                 plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd'],color='k',linestyle='dashed')

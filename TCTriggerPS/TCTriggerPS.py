@@ -1,4 +1,4 @@
-def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, trigger_thresh = 5, brightness_thresh = 0.0, sd_thresh = 2,wave='850',mjypbmfactor=537000.0,mjyparcsecfactor=2340.0,WEIGHTED=False,GOODBOX=False,EXTRASOURCES=False,ONLYEXTRA=False):
+def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, trigger_thresh = 5, brightness_thresh = 0.0, sd_thresh = 2,wave='850',mjypbmfactor=537000.0,mjyparcsecfactor=2340.0,fidnoiseterm=14,fidcalterm=0.02,WEIGHTED=False,GOODBOX=False,EXTRASOURCES=False,ONLYEXTRA=False):
     '''
     This program loads all of the functions defined in TCTriggerFunctions.py
     and exectues them in their correct order such that we are able to
@@ -234,8 +234,8 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 
             os.system('mkdir '+output_dir+'/light_curves/')
             os.system('mkdir '+output_dir+'/light_curves/'+region)
-
-            source_slope_table,triggered_sources = TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = trigger_thresh,brightness_thresh = brightness_thresh,sd_thresh = sd_thresh,wave=wave,WEIGHTED=WEIGHTED,GOODBOX=GOODBOX)
+            
+            source_slope_table,triggered_sources = TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = trigger_thresh,brightness_thresh = brightness_thresh,sd_thresh = sd_thresh,wave=wave,fidnoiseterm=fidnoiseterm,fidcalterm=fidcalterm,WEIGHTED=WEIGHTED,GOODBOX=GOODBOX)
 
             #print('\n\n')
             #print(source_slope_table)
