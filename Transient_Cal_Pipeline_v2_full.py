@@ -14,6 +14,7 @@ from transientclumps.pointing_check import pointing_check
 from bookkeeping.generate_calfactors_file import generate_calfactors_file
 from bookkeeping.make_final_lightcurves import make_final_lightcurves
 from bookkeeping.family_members import family_members
+from shift_centre.shift_centres_postprocess import shift_centres
 # Can install starlink py-wrapper from: https://github.com/Starlink/starlink-pywrapper ---- or use pip install starlink-pywrapper
 from starlink import kappa
 import subprocess
@@ -29,12 +30,13 @@ import glob
 ###############
 
 # The wavelengths to run. Can be ['850'], ['450'] (IF 850 micron data has already been produced! the 450 micron pipeline relies on that data for the pointing corrections!), or ['850','450']
-waves = ['850','450']
+waves = ['850']
 
 # List of Regions To Run. Must select from: IC348, NGC1333, NGC2024, NGC2071, OMC23, OPHCORE, SERPM, SERPS, DR21C, DR21N, DR21S, M17, M17SWex, S255
-regions_to_run = ['SERPS','SERPM']
+regions_to_run = ['M17','DR21S','DR21N','OMC23','NGC2024']
+
 # The directories containing the 850 micron, R3 images you would like to process in the same order as the region names above
-datadirs       = ['SERPS','SERPM']
+datadirs       = ['M17','DR21S','DR21N','OMC23','NGC2024']
 
 # Sets the number of XC/AC corrections to iteratively perform
 Number_of_Alignment_Iterations = 1 
@@ -48,7 +50,7 @@ Number_of_Alignment_Iterations = 1
 pointsourceonly = False
 
 # Run Cross-correlation and Auot-correlation methods only? (Involves reducing new maps with Starlink)
-alignment_ACcalonly = False
+alignment_ACcalonly = True
 
 # Has 450 micron data already been produced for this region? If so, you can skip re-runnning the first observation and just do the new ones
 reduce_first_date_for_450 = False
@@ -70,9 +72,10 @@ mJy_arcsec2_850_FCF = 2340.0
 mJy_beam_850_FCF    = 537000.0
 
 mJy_arcsec2_450_FCF = 4710.0
-mJy_arcsec2_450_FCF = 491000.0
+mJy_beam_450_FCF    = 491000.0
 
-
+# Top-Level directory in which point source results will be stored
+results_dir = 'pointsource_results/'
 #####################################################
 #####################################################
 
@@ -370,18 +373,18 @@ if not alignment_ACcalonly:
             # Run Weighted Calibration program aand apply results
             # Get Variables and names to give to weighted_cal as sources to avoid (can be empty)!
             var_list,var_names = get_vars(eachregion,wave)
-            sourceinfofile = sorted(glob.glob('pointsource_results/'+eachregion+'/'+'*_'+wave+'_sourceinfo.txt'))[-1]
+            sourceinfofile = sorted(glob.glob(results_dir+eachregion+'/'+'*_'+wave+'_sourceinfo.txt'))[-1]
             if wave == '450':
-                weighted_cal(1000.0,var_list,sourceinfofile,'pointsource_results/'+eachregion+'/',date_cutoff=PScal_cutoff_date,numiter=5,fid_450_perc=0.05) # Cutoff is in millijanskys!
+                weighted_cal(1000.0,var_list,sourceinfofile,results_dir+eachregion+'/',date_cutoff=PScal_cutoff_date,numiter=5,fid_450_perc=0.05) # Cutoff is in millijanskys!
             else:
-                weighted_cal(100.0,var_list,sourceinfofile,'pointsource_results/'+eachregion+'/',date_cutoff=PScal_cutoff_date,numiter=5,fid_450_perc=0.05) # Cutoff is in millijanskys!
+                weighted_cal(100.0,var_list,sourceinfofile,results_dir+eachregion+'/',date_cutoff=PScal_cutoff_date,numiter=5,fid_450_perc=0.05) # Cutoff is in millijanskys!
             applyWeightedCal(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')),wave)
 
            
             # Since we need to consider the weather at 450 microns, we define a box in Tau*Airmass versus WeightedCalUnc space to identify "Good Maps"
             if wave == '450':
                 # Need to make sourceinfo and metadata file for GOOD BOX ONLY - so get a list of the datescans from the weightedcal function run, above
-                weightedcallookup = np.genfromtxt(sorted(list(glob.glob('pointsource_results/'+eachregion+'/*'+wave+'*_calepoch_weightedmean.txt')))[-1],dtype=None,names=True)
+                weightedcallookup = np.genfromtxt(sorted(list(glob.glob(results_dir+eachregion+'/*'+wave+'*_calepoch_weightedmean.txt')))[-1],dtype=None,names=True)
                 weighted_datescans1     = weightedcallookup['DateScan']
                 weighted_datescans      = []
                 for i in weighted_datescans1:
@@ -402,7 +405,7 @@ if not alignment_ACcalonly:
 
                 # If we have already identified good maps - make sure we skip the processing for those and only deal with new maps
                 previously_known_good_maps = []
-                prevmeta = np.genfromtxt(sorted(list(glob.glob('pointsource_results/'+eachregion+'/*GoodMaps*metadata.txt')))[-1],dtype=None,names=True)
+                prevmeta = np.genfromtxt(sorted(list(glob.glob(results_dir+eachregion+'/*GoodMaps*metadata.txt')))[-1],dtype=None,names=True)
                 for eachname in prevmeta['Name']:
                     strname = eachname.decode('utf-8')
                     previously_known_good_maps.append(strname.split('_')[-3]+'_'+strname.split('_')[-2])
@@ -463,13 +466,36 @@ if not alignment_ACcalonly:
 
             print('\nMaking Light Curves....')
 
-            family_members('pointsource_results/'+eachregion+'/'+eachregion+'_PointSource_cal_info_dict_targunc5_'+wave+'.pickle',PScal_cutoff_date,wave)
+            family_members(results_dir+eachregion+'/'+eachregion+'_PointSource_cal_info_dict_targunc5_'+wave+'.pickle',PScal_cutoff_date,wave)
 
 
 
-            make_final_lightcurves('pointsource_results/'+eachregion+'/'+eachregion+'_'+wave+'_Wcal_sourcecat.bin',sorted(glob.glob('pointsource_results/'+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave)
+            make_final_lightcurves(results_dir+eachregion+'/'+eachregion+'_'+wave+'_Wcal_sourcecat.bin',sorted(glob.glob(results_dir+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave)
             if wave == '450':
                 print('\tNow making Good Maps Light Curves....')
-                make_final_lightcurves('pointsource_results/'+eachregion+'/'+eachregion+'_'+wave+'_Wcal_GoodMaps_sourcecat.bin',sorted(glob.glob('pointsource_results/'+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave,GOODMAPS=True)
+                make_final_lightcurves(results_dir+eachregion+'/'+eachregion+'_'+wave+'_Wcal_GoodMaps_sourcecat.bin',sorted(glob.glob(results_dir+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave,GOODMAPS=True)
+
+
+            #################
+            #################
+            # Shift All Coordinates in relevant files produced by point source algorithm to be the Centroid, not the first image
+            #################
+            #################
+
+            print('\nShifting Centroids of sources and updating output files (creating *CoordFix.txt)...'
+            sourceinfofiletoshift = sorted(glob.glob('{}/{}/{}*{}_Wcal_sourceinfo.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
+            calfactorsfiletoshift = sorted(glob.glob('{}/{}/{}*{}_CalFactors.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
+            try:
+                variablesfiletoshift  = sorted(glob.glob('{}/{}/{}*{}_variables.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
+            except:
+                variablesfiletoshift  = 'NOFILEBRAH.txt'
+            try:
+                YSOcomparefiletoshift = sorted(glob.glob('{}/{}/{}_YSOcompare_{}.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
+            except:
+                YSOcomparefiletoshift  = 'NOFILEBRAH.txt'
+
+            
+            shift_centres(sourceinfofiletoshift,calfactorsfiletoshift,variablesfiletoshift,YSOcomparefiletoshift)
+
 
 print("\n\n############\n############\nC'est Fini!\n############\n############\n\n") 
