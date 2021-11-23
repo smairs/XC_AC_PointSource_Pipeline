@@ -14,6 +14,7 @@ def make_coadds_metadata(region,datadir,wave,mjypbmfactor=537000.0,mjyparcsecfac
             sdffiles = sorted(glob.glob(datadir+'/*'+wave+'*sm_Wcal.sdf'))
     else:
         sdffiles = sorted(glob.glob(datadir+'/*'+wave+'*sm.sdf'))
+        
 
     if wave == '450':
         TCTrigger(sdffiles,'config/protocat.txt','config/diskcat.txt',region,aperture_diam = 0.0005555555,trigger_thresh = 4, brightness_thresh = 0.0, sd_thresh = 2,wave=wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,fidnoiseterm=0.0,fidcalterm=0.05,WEIGHTED=weighted,GOODBOX=goodbox)

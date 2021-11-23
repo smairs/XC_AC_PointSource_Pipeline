@@ -467,6 +467,7 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     import os
     import pickle
     import glob
+    import numpy as np
 
     # Check to see if a previous sourceinfo dict has been created by TCCheck4Variables.
     # If it has, copy the information over that already exists so we don'thave to calculate it again
@@ -479,6 +480,7 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     else:
         fileending = wave+'_sourceinfo.txt'
     previous_results_list = sorted(glob.glob(output_dir+'/*'+fileending))
+    print('\n\nPrevious Results List\n\n',previous_results_list,'\n\n')
     previous_results_thisregion = []
     if len(previous_results_list)>0:
         previous_results=True
@@ -487,12 +489,16 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     datesinfile = []
     alldatescans = []
     if previous_results:
+       print('\n\nPREVIOUS RESULTS RECOGNISED\n\n')
        sourceinfotable = Table.read(sorted(previous_results_thisregion)[-1],format='ascii') 
+       print('\n',sourceinfotable.colnames,'\n')
        for eachcolname in sourceinfotable.colnames:
            if eachcolname[0:2]=='f_':
+               print('\teachcolname')
                datesinfile.append(eachcolname.split('_')[1])
                alldatescans.append(eachcolname.split('_')[1]+'_'+eachcolname.split('_')[2])
 
+    print('\n\n',alldatescans,'\n\n')
     # Read in the peak catalogue
     peak_cat    = apfits.getdata(peakcat)
 
@@ -558,7 +564,12 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
                         peakY = '-'+peakY
     
                 # Obtain the peak flux by placing an aperture on that location - THIS IS THE BIGGEST TIME SINK OF THE TRIGGER CODE
-                peak_flux = kappa.aperadd(eachfile,centre='"'+peakX+','+peakY+'"',diam=aperture_diam).total
+                try:
+                    peak_flux = kappa.aperadd(eachfile,centre='"'+peakX+','+peakY+'"',diam=aperture_diam).total
+                except:
+                    print('NAN PEAK FLUX MEASUREMENT!!!!!!')
+                    print('kappa.aperadd('+eachfile+',centre='+"'"+'"'+"'"+peakX+','+peakY+"'"+'"'+"'"+',diam='+str(aperture_diam)+').total')
+                    peak_flux = np.nan
                 results_dict[peak_cat['ID'][eachsource]]['peakfluxes'].append(peak_flux)
                 results_dict[peak_cat['ID'][eachsource]]['dates'].append(jd)
                 results_dict[peak_cat['ID'][eachsource]]['dates_reg'].append(date_reg)
@@ -709,14 +720,15 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
     # For each source, calculate the mean flux and standard deviation
     for eachsource in source_dict.keys():                            
         source_dict[eachsource]['trigger']     = []
-        source_dict[eachsource]['mean']        = np.average(source_dict[eachsource]['peakfluxes'])
-        source_dict[eachsource]['sd']          = np.sqrt(sum((source_dict[eachsource]['peakfluxes']-np.average(source_dict[eachsource]['peakfluxes']))**2.0)/(len(source_dict[eachsource]['peakfluxes'])-1))
-        source_dict[eachsource]['sd_rel']      = np.sqrt(sum((source_dict[eachsource]['peakfluxes']-np.average(source_dict[eachsource]['peakfluxes']))**2.0)/(len(source_dict[eachsource]['peakfluxes'])-1))/np.average(source_dict[eachsource]['peakfluxes'])
-        source_dict[eachsource]['sd_fiducial'] = fideq(np.average(source_dict[eachsource]['peakfluxes']),noiseterm=fidnoiseterm,calterm=fidcalterm)
+        source_dict[eachsource]['mean']        = np.nanmean(source_dict[eachsource]['peakfluxes'])
+        source_dict[eachsource]['sd']          = np.sqrt(sum((source_dict[eachsource]['peakfluxes']-np.nanmean(source_dict[eachsource]['peakfluxes']))**2.0)/(len(source_dict[eachsource]['peakfluxes'])-1))
+        source_dict[eachsource]['sd_rel']      = np.sqrt(sum((source_dict[eachsource]['peakfluxes']-np.nanmean(source_dict[eachsource]['peakfluxes']))**2.0)/(len(source_dict[eachsource]['peakfluxes'])-1))/np.nanmean(source_dict[eachsource]['peakfluxes'])
+        source_dict[eachsource]['sd_fiducial'] = fideq(np.nanmean(source_dict[eachsource]['peakfluxes']),noiseterm=fidnoiseterm,calterm=fidcalterm)
 
         # Measure Normalised peak flux (normalised by average) versus days. Get a linear relationship
         # The diagonal elements of cov are the variances of the coefficients in z, i.e. np.sqrt(np.diag(cov)) gives you the standard deviations of the coefficients. You can use the standard deviations to estimate the probability that the absolute error exceeds a certain value, e.g. by inserting the standard deviations in the uncertainty propagation calculation. If you use e.g. 3*standard deviations in the uncertainty propagation, you calculate the error which will not be exceeded in 99.7% of the cases.
-        p,cov           = np.polyfit(np.array(sorted(source_dict[eachsource]['dates']))-sorted(source_dict[eachsource]['dates'])[0],np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]/np.average(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]),1,cov=True,full=False)
+        print('\n\nDATES AND PEAKFLUXES IN LINEAR FIT\n\n',np.array(sorted(source_dict[eachsource]['dates'])),np.array(source_dict[eachsource]['peakfluxes']),'\n\n')
+        p,cov           = np.polyfit(np.array(sorted(source_dict[eachsource]['dates']))-sorted(source_dict[eachsource]['dates'])[0],np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]/np.nanmean(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]),1,cov=True,full=False)
 
         slope                = p[0]
         delta_slope          = np.sqrt(np.diag(cov))[0]
@@ -749,8 +761,8 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
                     peakfluxes_not_including_current_measurement.append(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))][eachpeakflux])
 
             peakfluxes_not_including_current_measurement = np.array(peakfluxes_not_including_current_measurement)
-            mean_not_including_current_measurement       = np.average(peakfluxes_not_including_current_measurement)
-            SD_not_including_current_measurement         = np.std(peakfluxes_not_including_current_measurement,ddof=1)
+            mean_not_including_current_measurement       = np.nanmean(peakfluxes_not_including_current_measurement)
+            SD_not_including_current_measurement         = np.nanstd(peakfluxes_not_including_current_measurement,ddof=1)
 
             # Find z-score! 
             trigger = abs(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))][eachmeasurement] - mean_not_including_current_measurement)/SD_not_including_current_measurement
@@ -784,12 +796,12 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
                     trigger_messages_stochastic_newind.append(0)
 
                 plt.scatter((np.array(source_dict[eachsource]['dates'])[np.argsort(np.array(source_dict[eachsource]['dates']))]-np.array(source_dict[eachsource]['dates'])[np.argsort(np.array(source_dict[eachsource]['dates']))][0])/365.24,np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))],label=str(source_dict[eachsource]['index'])+':'+eachsource.replace('_',''))
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd'],color='k',linestyle='dashed')
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd_fiducial'],color='b',linestyle='dotted')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd'],color='k',linestyle='dashed')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd_fiducial'],color='b',linestyle='dotted')
 
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes']),color='k',linestyle='solid')
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])-source_dict[eachsource]['sd'],color='k',linestyle='dashed')
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])-source_dict[eachsource]['sd_fiducial'],color='b',linestyle='dotted')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes']),color='k',linestyle='solid')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])-source_dict[eachsource]['sd'],color='k',linestyle='dashed')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])-source_dict[eachsource]['sd_fiducial'],color='b',linestyle='dotted')
                 plt.legend(loc='lower left')
                 plt.savefig('index_'+str(source_dict[eachsource]['index'])+'_'+eachsource+'_'+wave+'_ACcal_lightcurve.pdf',format='pdf')
                 plt.clf()
@@ -820,9 +832,9 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
                 # Make a plot to send with the email/notification
 
                 plt.scatter(np.array(range(len(np.array(source_dict[eachsource]['dates_reg'])[np.argsort(np.array(source_dict[eachsource]['dates']))])))+1,np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))],label=eachsource.replace('_',''))
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd'],color='k',linestyle='dashed')
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes']),color='k',linestyle='solid')
-                plt.axhline(y=np.average(source_dict[eachsource]['peakfluxes'])-source_dict[eachsource]['sd'],color='k',linestyle='dashed')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])+source_dict[eachsource]['sd'],color='k',linestyle='dashed')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes']),color='k',linestyle='solid')
+                plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])-source_dict[eachsource]['sd'],color='k',linestyle='dashed')
                 plt.legend(loc='upper right')
                 plt.savefig('index_'+str(source_dict[eachsource]['index'])+'_'+eachsource+'_'+wave+'_lightcurve.pdf',format='pdf')
                 plt.clf()

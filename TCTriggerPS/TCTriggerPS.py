@@ -120,6 +120,7 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
         else:
             for eachnewfile in sorted(input_data):
                 inputfilelist.append(eachnewfile)
+        print('COADDING:',inputfilelist)
         coadd_name = TCCoadd(inputfilelist,wave,GOODBOX=GOODBOX)
     else:
         coadd_name = TCCoadd(input_data,wave,GOODBOX=GOODBOX)
@@ -131,6 +132,8 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, tr
 
 #
 #
+
+    print('METADATA INPUT',input_data)
 
     ##################################
     ###### Build Metadata Table ######

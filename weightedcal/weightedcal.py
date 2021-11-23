@@ -18,7 +18,7 @@ rc('axes',labelsize=16)
 ##################################################
 
 
-def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=5,fid_450_perc=0.05):
+def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=5,fid_450_perc=0.05,goodmaps=False):
     '''
 
     :param cut_off:  how deep into the file of sources do we want to look? 0.1Jy @ 850, 1 Jy @450 -- no deeper!
@@ -208,7 +208,7 @@ def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=
         # Renormalize to keep the over-all calibration from drifting
         # treated all epochs independently -- but you need to know where you are fixing the flux to
         # 2021-05-14 -- The first epoch was the original choice here, but I have changed this to be the average between all calibration dates for consistency with the PScal
-        div    = np.average(mult[0:calEP+1]) # calEP is the number of calibration dates. The +1 is for python indexing, to be inclusive of all cal dates. Used to be: mult[0]
+        div    = np.nanmedian(mult[0:calEP+1]) # calEP is the number of calibration dates. The +1 is for python indexing, to be inclusive of all cal dates. Used to be: mult[0]
         mult   = mult/div
         sdwe   = sdwe/div
         sde    = sde/div
@@ -235,7 +235,10 @@ def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=
     # **All** Source Information - Using ***Uniform*** Weighting per Epoch
     ########################
 
-    fsource = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_allsource_uniformweighting.txt','w')
+    if goodmaps:
+        fsource = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_allsource_uniformweighting_GoodMaps.txt','w')
+    else:
+        fsource = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_allsource_uniformweighting.txt','w')
     fsource.write('#SourceInd\tWMeanFlux\tWFluxSD\tWFidSD\tWFluxSD_div_WFidSD\n')
     for s in range(SR):
         means[s] = np.mean(mult*np.array(allflux[s]))
@@ -256,7 +259,10 @@ def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=
 
 
     # Calibrator Source Information - Using Weighted Epochs
-    fcal = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_calsource_weightedmean.txt','w')
+    if goodmaps:
+        fcal = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_calsource_weightedmean_GoodMaps.txt','w')
+    else:
+        fcal = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_calsource_weightedmean.txt','w')
     fcal.write('#SourceInd\tWMeanFlux\tWFluxSD\tWFidSD\tWFluxSD_div_WFidSD\twt\n')
 
     for s in range(SR):
@@ -309,8 +315,10 @@ def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=
     ##############
     #Printing out a file with the epoch information!
     ##############
-
-    fepoch = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_calepoch_weightedmean.txt','w')
+    if goodmaps:
+        fepoch = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_calepoch_weightedmean_GoodMaps.txt','w')
+    else:
+        fepoch = open(outdir+filename.split('/')[-1].split('.txt')[0]+'_calepoch_weightedmean.txt','w')
     fepoch.write('#DateScan\tDivisor\tFormalUnc\tWeightedCalUnc\tNumCal\n')
     for e in range(allEP):
         # CHANGING TO DIVISOR FOR OUR RECORDS - NEED TO CHANGE UNCERTAINTY VIA RELATIVE ERROR CALCULATIONS
@@ -425,8 +433,10 @@ def weighted_cal(cut_off,variables,filename,outdir,date_cutoff=20210410,numiter=
     ax22.set_ylabel('Epoch Cal Unc')
     ax22.set_xticklabels(xlabels,rotation=20)
 
-
-    plt.savefig(outdir+filename.split('/')[-1].split('.txt')[0]+'_weightedcal_plots.pdf',format='pdf')
+    if goodmaps:
+        plt.savefig(outdir+filename.split('/')[-1].split('.txt')[0]+'_weightedcal_plots_GoodMaps.pdf',format='pdf')
+    else:
+        plt.savefig(outdir+filename.split('/')[-1].split('.txt')[0]+'_weightedcal_plots.pdf',format='pdf')
     plt.clf()
 
 ###############################################################

@@ -24,7 +24,7 @@ rc('axes',labelsize='x-small')
 ##################################################
 
 
-def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='point_source_cal/bright_threshes.json',cat_dir='config/'):
+def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='point_source_cal/bright_threshes.json',cat_dir='config/',goodmaps=False):
     '''
     This code is used to extract families of different sizes based on a target uncertianty in the final calibration.
     '''
@@ -59,21 +59,17 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
     target_perc_unc = float(eachtargunc)/100.0
     brightnessthresh = brightness_threshes[wave][eachregion][eachtargunc]
 
-    #print('\n~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    #print('\nREGION = ' + eachregion + ', Flux Thresh: ', brightnessthresh, ', Targ Uncertainty: ', eachtargunc)
-    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    #print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~\n')
-
 ###########
 # Extract Source Information
 ###########
 
     # Get all of the source information and metadata corresponding to this region and wavelength
-    sourceinfo = pickle.load(open('pointsource_results/' + eachregion + '/' + eachregion + '_'+wave+'_sourcecat.bin', 'rb'))
-    metadata = np.genfromtxt(sorted(list(glob.glob('pointsource_results/' + eachregion + '/*'+wave+'*_Wcal_metadata.txt')))[-1], names=True,dtype=[('ID', '<f8'), ('Name', '<U28'), ('UT', '<f8'), ('JD', '<f8'), ('Obs', '<f8'), ('Elev', '<f8'),('Tau225', '<f8'), ('RMS', '<f8'), ('RMS_unit', '<f8')])
+    if goodmaps:
+        sourceinfo = pickle.load(open('pointsource_results/' + eachregion + '/' + eachregion + '_'+wave+'_Wcal_GoodMaps_sourcecat.bin', 'rb'))
+        metadata = np.genfromtxt(sorted(list(glob.glob('pointsource_results/' + eachregion + '/*'+wave+'*_Wcal_GoodMaps_metadata.txt')))[-1], names=True,dtype=[('ID', '<f8'), ('Name', '<U28'), ('UT', '<f8'), ('JD', '<f8'), ('Obs', '<f8'), ('Elev', '<f8'),('Tau225', '<f8'), ('RMS', '<f8'), ('RMS_unit', '<f8')])
+    else:
+        sourceinfo = pickle.load(open('pointsource_results/' + eachregion + '/' + eachregion + '_'+wave+'_sourcecat.bin', 'rb'))
+        metadata = np.genfromtxt(sorted(list(glob.glob('pointsource_results/' + eachregion + '/*'+wave+'*_Wcal_metadata.txt')))[-1], names=True,dtype=[('ID', '<f8'), ('Name', '<U28'), ('UT', '<f8'), ('JD', '<f8'), ('Obs', '<f8'), ('Elev', '<f8'),('Tau225', '<f8'), ('RMS', '<f8'), ('RMS_unit', '<f8')])
 
 
     # Find the number of sources above the given flux threshold: 
@@ -138,8 +134,8 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
                     peakfluxes_to_normalise_date_cutoff.append(ordered_peakfluxes[i])
 
         # Add results to sourceinfo dictionary
-        sourceinfo[eachsource]['avg_peakflux'] = np.mean(peakfluxlist_thisRMSlimit)
-        sourceinfo[eachsource]['norm_peakfluxes'] = np.array(peakfluxlist_thisRMSlimit) / np.mean(peakfluxes_to_normalise_date_cutoff)
+        sourceinfo[eachsource]['avg_peakflux'] = np.nanmean(peakfluxlist_thisRMSlimit)
+        sourceinfo[eachsource]['norm_peakfluxes'] = np.array(peakfluxlist_thisRMSlimit) / np.nanmean(peakfluxes_to_normalise_date_cutoff)
         sourceinfo[eachsource]['dates_thisRMSlimit'] = np.array(datelist_thisRMSlimit)
 
 
@@ -215,7 +211,6 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
     for eachpair in pairnames:
         source1 = eachpair[0:2]
         source2 = eachpair[2:4]
-        #print(source1,source2)
         if source1 not in unsorted_sources:
             if source1 not in known_variables:
                 unsorted_sources.append(source1)
@@ -225,7 +220,6 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
 
     sources = sorted(unsorted_sources)
     source_set = set(sources)
-
 
 ##############
 ##############
@@ -258,7 +252,6 @@ def plot_SDfamsize(eachregion,coadd_cat,wave,eachtargunc,date_cutoff,jsonfile='p
         dummy = 0
         for eachcombo in subsets_of_this_size:
             dummy += 1
-            print('\tWorking on Source Combo ', dummy, ' of ', len(subsets_of_this_size), ' -- Family Size: ',eachfamilysize, ' -- total cal num ', len(source_set))
             SDs_in_this_combo_of_sources = []
             for eachpair, eachSD in zip(sorted_pairnames, sorted_SDs):
                 if (eachpair[0:2] in eachcombo) and (eachpair[2:4] in eachcombo):

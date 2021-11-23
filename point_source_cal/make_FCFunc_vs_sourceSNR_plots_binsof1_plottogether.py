@@ -25,7 +25,7 @@ rc('ytick', labelsize='small')
 rc('axes',labelsize='x-small')
 ##################################################
 
-def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=False,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/'):
+def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=False,target_uncertainties = [0.05],jsonfile='point_source_cal/bright_threshes.json',cat_dir = 'config/',goodmaps=False,gooddatescans=[]):
     '''
     This code plots the expected calibration uncertainty for each source (noise/[Flux*sqrt(N)]) 
     where N is the number of sources above that brightness threshold
@@ -187,7 +187,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
             plt.legend(loc='upper right')
         else:
             plt.legend(loc='upper left')
-   
+
         plt.savefig('pointsource_results/Estimated_EnsembleUnc_versus_Flux_{}_targunc_{}.png'.format(region,int(100*eachtargunc)),dpi=300) 
         plt.clf()
 
@@ -201,18 +201,18 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
 
              SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
                  RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-                 normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
+                 normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff,goodmaps=goodmaps)
 
         else:
             try:
                 SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
                      RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-                     normfluxes_by_date_all,families_all = get_previously_defined_family(region,wave,str(100*eachtargunc),date_cutoff) 
+                     normfluxes_by_date_all,families_all = get_previously_defined_family(region,wave,str(100*eachtargunc),date_cutoff,gooddatescans=gooddatescans) 
             except:
                 print('\n\tNO PREVIOUS FAMILY FILE FOUND WITH PARAMETERS: {}, {} microns, {}% target unc, {} (date cutoff for normalisation)\n\n\t~~~~~~FINDING FAMILY FROM SCRATCH~~~~'.format(region,wave,str(100*eachtargunc),date_cutoff))
                 SD_of_best_fam_for_plot,numcals_for_plot,FCF_uncs_cat,\
                     RMSthresh,FCF_dates_all,FCFs_all,FCF_uncs_all,\
-                    normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff)
+                    normfluxes_by_date_all,families_all= plot_SDfamsize(region,cat,wave,str(100*eachtargunc),date_cutoff,goodmaps=goodmaps)
 
 
 ###########
@@ -229,8 +229,11 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
         plt.ylabel('Family Size')
         plt.ylim(ymin=1, ymax=14)
         plt.xlim(xmin=0.02, xmax=0.35)
-    
-        plt.savefig('pointsource_results/FamilySize_versus_FamilySD_{}_targunc_{}.png'.format(region,int(100*eachtargunc)),dpi=300)
+
+        if goodmaps:
+            plt.savefig('pointsource_results/FamilySize_versus_FamilySD_{}_targunc_{}_GoodMaps.png'.format(region,int(100*eachtargunc)),dpi=300)
+        else:    
+            plt.savefig('pointsource_results/FamilySize_versus_FamilySD_{}_targunc_{}.png'.format(region,int(100*eachtargunc)),dpi=300)
         plt.clf()
    
 ###########
@@ -247,9 +250,11 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
             cal_info_dict['datescans'] = FCF_dates_all[-1]
             cal_info_dict['RelFCFs'] = FCFs_all[-1]
             cal_info_dict['RelFCFuncs'] = np.array(FCF_uncs_all[-1]) / 100
-    
-            pickle.dump(cal_info_dict, open('pointsource_results/'+region+'/'+region+'_PointSource_cal_info_dict_targunc'+
-                                            str(int(float(target_uncertainty_key)))+'_'+wave+'.pickle', 'wb'))
+
+            if goodmaps:    
+                pickle.dump(cal_info_dict, open('pointsource_results/'+region+'/'+region+'_PointSource_cal_info_dict_targunc'+str(int(float(target_uncertainty_key)))+'_'+wave+'_GoodMaps.pickle', 'wb'))
+            else:
+                pickle.dump(cal_info_dict, open('pointsource_results/'+region+'/'+region+'_PointSource_cal_info_dict_targunc'+str(int(float(target_uncertainty_key)))+'_'+wave+'.pickle', 'wb'))
 ###########
 ###########
 # Plot FCFs by date for each size of family
@@ -284,7 +289,10 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
                     spaced_xticks.append(date)
                     spaced_xtick_labels.append(datelabel)
             plt.xticks(spaced_xticks,spaced_xtick_labels,rotation=20)
-            plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCF_with_time_'+wave+'.png',format='png',dpi=300)
+            if goodmaps:
+                plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCF_with_time_'+wave+'_GoodMaps.png',format='png',dpi=300)
+            else:
+                plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCF_with_time_'+wave+'.png',format='png',dpi=300)
             plt.clf()
 
 ############
@@ -296,7 +304,10 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
         for eachcalnum in range(len(FCFs_all)):
             plt.hist(FCFs_all[eachcalnum],color='k')
             plt.suptitle(region+', Num Fam Members: '+str(numcals_for_plot[eachcalnum]))
-            plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCFhists_'+wave+'.png',format='png',dpi=300)
+            if goodmaps:
+                plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCFhists_'+wave+'_GoodMaps.png',format='png',dpi=300)
+            else:
+                plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCFhists_'+wave+'.png',format='png',dpi=300)
             plt.clf()
         
         for eachcalnum in range(len(FCFs_all)):
@@ -306,5 +317,8 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
             plt.xlim(xmin=0,xmax=10)
             plt.ylim(ymin=0, ymax=12)
             plt.suptitle(region+', Num Fam Members: '+str(numcals_for_plot[eachcalnum]))
-            plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCFunchists_'+wave+'.png',format='png',dpi=300)
+            if goodmaps:
+                plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCFunchists_'+wave+'_GoodMaps.png',format='png',dpi=300)
+            else:
+                plt.savefig('pointsource_results/FCFplots/'+region+'_'+str(numcals_for_plot[eachcalnum])+'FamMems_FCFunchists_'+wave+'.png',format='png',dpi=300)
             plt.clf()

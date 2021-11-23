@@ -15,6 +15,7 @@ from bookkeeping.generate_calfactors_file import generate_calfactors_file
 from bookkeeping.make_final_lightcurves import make_final_lightcurves
 from bookkeeping.family_members import family_members
 from shift_centre.shift_centres_postprocess import shift_centres
+from shift_centre.shift_maps import shift_maps
 # Can install starlink py-wrapper from: https://github.com/Starlink/starlink-pywrapper ---- or use pip install starlink-pywrapper
 from starlink import kappa
 import subprocess
@@ -33,10 +34,10 @@ import glob
 waves = ['850']
 
 # List of Regions To Run. Must select from: IC348, NGC1333, NGC2024, NGC2071, OMC23, OPHCORE, SERPM, SERPS, DR21C, DR21N, DR21S, M17, M17SWex, S255
-regions_to_run = ['M17','DR21S','DR21N','OMC23','NGC2024']
+regions_to_run = ['NGC1333','NGC2024','SERPM','SERPS','M17','M17SWex'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
 
-# The directories containing the 850 micron, R3 images you would like to process in the same order as the region names above
-datadirs       = ['M17','DR21S','DR21N','OMC23','NGC2024']
+# The directories  micron, R3 image,'NGCS2071','OMC23','S255's you would like to process in the same order as the region names above
+datadirs       = ['NGC1333','NGC2024','SERPM','SERPS','M17','M17SWex'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
 
 # Sets the number of XC/AC corrections to iteratively perform
 Number_of_Alignment_Iterations = 1 
@@ -64,7 +65,7 @@ target_uncertainties = [0.05]  # [0.05] means 5% target uncertainty -- keep it h
 find_new_family = False
 
 # For the weighted calibration 450 micron "Good Box"
-TautimesAMCutoff     = 0.14
+TautimesAMCutoff     = 0.12
 WeightedCalUncCutoff = 0.05
 
 # Define default (nomincal) FCF corrections
@@ -351,7 +352,7 @@ if not alignment_ACcalonly:
             #################
             #################
 
-            # Smooth all the data (already in mJy/beam)!
+            # Smooth all the data (already in mJy/beam)! -- This now scales the flux upwards by ~16%, as well, since the beam size is changing!
 
             print('\nSmoothing Data....')           
  
@@ -404,11 +405,14 @@ if not alignment_ACcalonly:
                             gooddatescans.append(each450file.split('_')[-6]+'_'+each450file.split('_')[-5])
 
                 # If we have already identified good maps - make sure we skip the processing for those and only deal with new maps
-                previously_known_good_maps = []
-                prevmeta = np.genfromtxt(sorted(list(glob.glob(results_dir+eachregion+'/*GoodMaps*metadata.txt')))[-1],dtype=None,names=True)
-                for eachname in prevmeta['Name']:
-                    strname = eachname.decode('utf-8')
-                    previously_known_good_maps.append(strname.split('_')[-3]+'_'+strname.split('_')[-2])
+                if len(list(glob.glob(results_dir+eachregion+'/*GoodMaps*metadata.txt')))>0:
+                    previously_known_good_maps = []
+                    prevmeta = np.genfromtxt(sorted(list(glob.glob(results_dir+eachregion+'/*GoodMaps*metadata.txt')))[-1],dtype=None,names=True)
+                    for eachname in prevmeta['Name']:
+                        strname = eachname.decode('utf-8')
+                        previously_known_good_maps.append(strname.split('_')[-3]+'_'+strname.split('_')[-2])
+                else:
+                    previously_known_good_maps = []
                 newgoodmaptally = 0
                 for eachgooddatescan in gooddatescans:
                     if eachgooddatescan not in previously_known_good_maps:
@@ -468,8 +472,6 @@ if not alignment_ACcalonly:
 
             family_members(results_dir+eachregion+'/'+eachregion+'_PointSource_cal_info_dict_targunc5_'+wave+'.pickle',PScal_cutoff_date,wave)
 
-
-
             make_final_lightcurves(results_dir+eachregion+'/'+eachregion+'_'+wave+'_Wcal_sourcecat.bin',sorted(glob.glob(results_dir+eachregion+'/*'+wave+'_CalFactors.txt'))[-1],eachregion,wave)
             if wave == '450':
                 print('\tNow making Good Maps Light Curves....')
@@ -482,20 +484,41 @@ if not alignment_ACcalonly:
             #################
             #################
 
-            print('\nShifting Centroids of sources and updating output files (creating *CoordFix.txt)...'
+            print('\nShifting Centroids of sources and updating output files (creating *CoordFix.txt)...')
             sourceinfofiletoshift = sorted(glob.glob('{}/{}/{}*{}_Wcal_sourceinfo.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
             calfactorsfiletoshift = sorted(glob.glob('{}/{}/{}*{}_CalFactors.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
             try:
                 variablesfiletoshift  = sorted(glob.glob('{}/{}/{}*{}_variables.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
             except:
-                variablesfiletoshift  = 'NOFILEBRAH.txt'
+                variablesfiletoshift  = 'NOFILE.txt'
             try:
                 YSOcomparefiletoshift = sorted(glob.glob('{}/{}/{}_YSOcompare_{}.txt'.format(results_dir,eachregion,eachregion,wave)))[-1]
             except:
-                YSOcomparefiletoshift  = 'NOFILEBRAH.txt'
+                YSOcomparefiletoshift  = 'NOFILE.txt'
 
             
             shift_centres(sourceinfofiletoshift,calfactorsfiletoshift,variablesfiletoshift,YSOcomparefiletoshift)
+
+
+            # Now do the GoodMaps sourceinfo file!
+
+            if wave == '450':
+                sourceinfofiletoshift = sorted(glob.glob('{}/{}/{}*450_Wcal_GoodMaps_sourceinfo.txt'.format(results_dir,eachregion,eachregion)))[-1]
+                calfactorsfiletoshift = 'NOFILE.txt' 
+                variablesfiletoshift  = 'NOFILE.txt'
+                YSOcomparefiletoshift = 'NOFILE.txt'
+                shift_centres(sourceinfofiletoshift,calfactorsfiletoshift,variablesfiletoshift,YSOcomparefiletoshift)
+
+
+            ### Then also shift the map to match!
+            newmaps_to_shift = sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm_Wcal.sdf')) # We can include the first map here because Wcal is produced new every time!
+            for eachnewmap in newmaps_to_shift:
+                shift_maps(eachnewmap)
+
+            ### Then also the coadds!
+            newmaps_to_shift = sorted(glob.glob(results_dir+eachregion+'/*'+wave+'*Wcal*coadd.sdf')) # This includes GoodMaps!
+            for eachnewmap in newmaps_to_shift:
+                shift_maps(eachnewmap)
 
 
 print("\n\n############\n############\nC'est Fini!\n############\n############\n\n") 
