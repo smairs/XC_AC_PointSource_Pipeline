@@ -32,27 +32,39 @@ def make_final_lightcurves(source_dict_file,calfactorfile,region,wave,GOODMAPS=F
         cal_peakfluxes   = np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]
 
         # UNCAL Plot
-        sns.scatterplot(x=dates_to_plot,y=uncal_peakfluxes,color='grey',alpha=0.3,marker='s',label='Uncal') 
+        try:
+            sns.scatterplot(x=dates_to_plot,y=uncal_peakfluxes,color='grey',alpha=0.3,marker='s',label='Uncal') 
+            uncalgood = True
+        except:
+            print('\nUncalibrated lightcurve for source '+eachsource+' not generated due to infs in the peak flux measurements')
+            uncalgood = False
 
         # WCAL PLOTS
-        sns.scatterplot(x=dates_to_plot,y=cal_peakfluxes,color='b',marker='o',label='Wcal')
+        try:
+            sns.scatterplot(x=dates_to_plot,y=cal_peakfluxes,color='b',marker='o',label='Wcal')
+            calgood = True
+        except:
+            print('\nCalibrated lightcurve for source '+eachsource+' not generated due to infs in the peak flux measurements')
+            calgood = False
 
-        # Lines, Titles and Labels
-        plt.suptitle('Index '+str(source_dict[eachsource]['index'])+': '+eachsource.replace('_',''))
-        plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])+np.nanstd(source_dict[eachsource]['peakfluxes'],ddof=1),color='b',linestyle='dashed')
-        plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])-np.nanstd(source_dict[eachsource]['peakfluxes'],ddof=1),color='b',linestyle='dashed')
-        plt.legend(loc='lower left')
-        plt.ylabel('Flux (mJy/beam)')
-        mindate = min(source_dict[eachsource]['dates'])
-        maxdate = max(source_dict[eachsource]['dates'])
-        xticksforlabels = np.linspace(mindate,maxdate,5)
-        xticklabels = []
-        for i in xticksforlabels:
-            xticklabels.append(str(Time(i,format='jd').isot).split('T')[0])
-        plt.xticks(xticksforlabels,xticklabels,rotation=20)
-        if GOODMAPS:
-            plt.savefig('pointsource_results/light_curves/'+region+'/'+'index_'+str(source_dict[eachsource]['index']).zfill(4)+'_'+eachsource+'_'+wave+'_Wcal_GoodMaps_lightcurve.pdf',format='pdf')
-        else:
-            plt.savefig('pointsource_results/light_curves/'+region+'/'+'index_'+str(source_dict[eachsource]['index']).zfill(4)+'_'+eachsource+'_'+wave+'_Wcal_lightcurve.pdf',format='pdf')
-        plt.clf()
+
+        if calgood or uncalgood:
+            # Lines, Titles and Labels
+            plt.suptitle('Index '+str(source_dict[eachsource]['index'])+': '+eachsource.replace('_',''))
+            plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])+np.nanstd(source_dict[eachsource]['peakfluxes'],ddof=1),color='b',linestyle='dashed')
+            plt.axhline(y=np.nanmean(source_dict[eachsource]['peakfluxes'])-np.nanstd(source_dict[eachsource]['peakfluxes'],ddof=1),color='b',linestyle='dashed')
+            plt.legend(loc='lower left')
+            plt.ylabel('Flux (mJy/beam)')
+            mindate = min(source_dict[eachsource]['dates'])
+            maxdate = max(source_dict[eachsource]['dates'])
+            xticksforlabels = np.linspace(mindate,maxdate,5)
+            xticklabels = []
+            for i in xticksforlabels:
+                xticklabels.append(str(Time(i,format='jd').isot).split('T')[0])
+            plt.xticks(xticksforlabels,xticklabels,rotation=20)
+            if GOODMAPS:
+                plt.savefig('pointsource_results/light_curves/'+region+'/'+'index_'+str(source_dict[eachsource]['index']).zfill(4)+'_'+eachsource+'_'+wave+'_Wcal_GoodMaps_lightcurve.pdf',format='pdf')
+            else:
+                plt.savefig('pointsource_results/light_curves/'+region+'/'+'index_'+str(source_dict[eachsource]['index']).zfill(4)+'_'+eachsource+'_'+wave+'_Wcal_lightcurve.pdf',format='pdf')
+            plt.clf()
  

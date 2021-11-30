@@ -1,4 +1,4 @@
-def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00083333, trigger_thresh = 5, brightness_thresh = 0.0, sd_thresh = 2,wave='850',mjypbmfactor=537000.0,mjyparcsecfactor=2340.0,fidnoiseterm=14,fidcalterm=0.02,WEIGHTED=False,GOODBOX=False):
+def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00088, trigger_thresh = 5, brightness_thresh = 0.0, sd_thresh = 2,wave='850',mjypbmfactor=537000.0,mjyparcsecfactor=2340.0,fidnoiseterm=14,fidcalterm=0.02,WEIGHTED=False,GOODBOX=False):
     '''
     This program loads all of the functions defined in TCTriggerFunctions.py
     and exectues them in their correct order such that we are able to

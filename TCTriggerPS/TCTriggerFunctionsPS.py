@@ -565,6 +565,7 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
     
                 # Obtain the peak flux by placing an aperture on that location - THIS IS THE BIGGEST TIME SINK OF THE TRIGGER CODE
                 try:
+                    print('GOOD PEAK FLUX MEASUREMENT')
                     peak_flux = kappa.aperadd(eachfile,centre='"'+peakX+','+peakY+'"',diam=aperture_diam).total
                 except:
                     print('NAN PEAK FLUX MEASUREMENT!!!!!!')
