@@ -31,13 +31,14 @@ import glob
 ###############
 
 # The wavelengths to run. Can be ['850'], ['450'] (IF 850 micron data has already been produced! the 450 micron pipeline relies on that data for the pointing corrections!), or ['850','450']
-waves = ['850']
+waves = ['450']
 
 # List of Regions To Run. Must select from: IC348, NGC1333, NGC2024, NGC2071, OMC23, OPHCORE, SERPM, SERPS, DR21C, DR21N, DR21S, M17, M17SWex, S255
-regions_to_run = ['NGC1333','NGC2024','SERPM','SERPS','M17','M17SWex'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
+regions_to_run = ['DR21C'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
 
-# The directories  micron, R3 image,'NGCS2071','OMC23','S255's you would like to process in the same order as the region names above
-datadirs       = ['NGC1333','NGC2024','SERPM','SERPS','M17','M17SWex'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
+# The directories  micron, ,'NGC2024','SERPM','S255'R3 image,'NGCS2071','OMC23','S255's you would like to process in the same order as the region names above
+datadirs       = ['DR21C'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
+
 
 # Sets the number of XC/AC corrections to iteratively perform
 Number_of_Alignment_Iterations = 1 
@@ -48,10 +49,10 @@ Number_of_Alignment_Iterations = 1
 # Number_of_Alignment_Iterations = [1,1,1,1,1]
 
 # Run Weighted and Source-Skewering Calibrations + Light Curves and Pointing Checks only?
-pointsourceonly = False
+pointsourceonly = True
 
 # Run Cross-correlation and Auot-correlation methods only? (Involves reducing new maps with Starlink)
-alignment_ACcalonly = True
+alignment_ACcalonly = False
 
 # Has 450 micron data already been produced for this region? If so, you can skip re-runnning the first observation and just do the new ones
 reduce_first_date_for_450 = False
@@ -354,9 +355,9 @@ if not alignment_ACcalonly:
 
             # Smooth all the data (already in mJy/beam)! -- This now scales the flux upwards by ~16%, as well, since the beam size is changing!
 
-            print('\nSmoothing Data....')           
+            #print('\nSmoothing Data....')           
  
-            smooth_input_data(most_recent_XC,wave)   
+            #smooth_input_data(most_recent_XC,wave)   
            
             print('\nGenerating Initial Sourceinfo File....')
 
@@ -395,14 +396,14 @@ if not alignment_ACcalonly:
                 #get good maps based on a TauxAM cutoff and a Weighted Calibration Uncertainty Cutoff for each datescan
                 goodmaps      = []
                 gooddatescans = []
-                for each450file in sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm_Wcal.sdf')):
-                    datescan = each450file.split('_')[-6]+'_'+each450file.split('_')[-5]
+                for each450file in sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')):
+                    datescan = each450file.split('_')[-5]+'_'+each450file.split('_')[-4]
                     tauvalue = (float(kappa.fitsval(each450file,'WVMTAUST').value)+float(kappa.fitsval(each450file,'WVMTAUEN').value))/2.0
                     AMvalue = (float(kappa.fitsval(each450file,'AMSTART').value)+float(kappa.fitsval(each450file,'AMEND').value))/2.0
                     if tauvalue*AMvalue<=TautimesAMCutoff:
                         if np.array(weightedcallookup['WeightedCalUnc'])[np.where(weighted_datescans==datescan)][0]<=WeightedCalUncCutoff:
                             goodmaps.append(each450file)
-                            gooddatescans.append(each450file.split('_')[-6]+'_'+each450file.split('_')[-5])
+                            gooddatescans.append(each450file.split('_')[-5]+'_'+each450file.split('_')[-4])
 
                 # If we have already identified good maps - make sure we skip the processing for those and only deal with new maps
                 if len(list(glob.glob(results_dir+eachregion+'/*GoodMaps*metadata.txt')))>0:
@@ -421,7 +422,16 @@ if not alignment_ACcalonly:
                 # Produce info files for the 450 micron "Good Maps"
                 if newgoodmaptally>0:
                     print('\tNow Working With The Good Maps (sourceinfo file, metadata etc)....')
-                    make_coadds_metadata(eachregion,most_recent_XC,wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,weighted=True,goodbox=True,goodboxfilelist=goodmaps)
+                    make_coadds_metadata(eachregion,most_recent_XC,wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,weighted=False,goodbox=True,goodboxfilelist=goodmaps)
+                    sourceinfofile = sorted(glob.glob(results_dir+eachregion+'/'+'*_'+wave+'_GoodMaps_sourceinfo.txt'))[-1]
+                    weighted_cal(1000.0,var_list,sourceinfofile,results_dir+eachregion+'/',date_cutoff=PScal_cutoff_date,numiter=5,fid_450_perc=0.05,goodmaps=True) # Cutoff is in millijanskys!
+                    applyWeightedCal(sorted(glob.glob(most_recent_XC+'/*'+wave+'*sm.sdf')),wave,goodmaps=True)
+                    Wgoodmaps = sorted(glob.glob(most_recent_XC+'/*WcalGM.sdf'))
+                    make_coadds_metadata(eachregion,most_recent_XC,wave,mjypbmfactor=mjypbmfactor,mjyparcsecfactor=mjyparcsecfactor,weighted=True,goodbox=True,goodboxfilelist=Wgoodmaps)
+
+
+
+                    
       
             print('\nGenerating Souceinfo File Based On Weighted Calibration....')
             # The following generates the sourceinfo file and metadata file that uses the weighted calibration data! 
@@ -467,6 +477,7 @@ if not alignment_ACcalonly:
             print('\nGenerating Final Information Files...')    
             # Get calfactors files        
             generate_calfactors_file(most_recent_XC,eachregion,wave)
+            generate_calfactors_file(most_recent_XC,eachregion,wave,goodmaps=True)
 
             print('\nMaking Light Curves....')
 

@@ -79,7 +79,8 @@ def generate_calfactors_file(datadir,region,wave,goodmaps=False):
     #weighted_scaling_factor_for_PScal = np.nanmean(weighted_calfactors[np.where(datescan_ints<20210410)])
     
     try:
-        PS_file          = pickle.load(open('pointsource_results/'+region+'/'+region+'_PointSource_cal_info_dict_targunc5_'+wave+GMstring+'.pickle','rb'))
+        # Should not have GoodMaps string here because PSCal was never performed for JUST goodmaps
+        PS_file          = pickle.load(open('pointsource_results/'+region+'/'+region+'_PointSource_cal_info_dict_targunc5_'+wave+'.pickle','rb'))
         PS_datescans     = np.array(PS_file['datescans'])
         PS_calfactors    = np.array(PS_file['RelFCFs'])[np.argsort(PS_datescans)]
         PS_calfactoruncs = np.array(PS_file['RelFCFuncs'])[np.argsort(PS_datescans)]

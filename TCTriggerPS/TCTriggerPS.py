@@ -108,7 +108,10 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00088, trigg
         else:
             prev_coadd_file ='*_Wcal_coadd.sdf'
     else:
-        prev_coadd_file = '*mJybmsm_coadd.sdf'
+        if GOODBOX:
+            prev_coadd_file = '*mJybmsm_GoodMaps_coadd.sdf'
+        else:
+            prev_coadd_file = '*mJybmsm_coadd.sdf'
 
 
     if len(sorted(list(glob.glob(output_dir+'/'+region+'/*'+wave+prev_coadd_file))))>0:
@@ -159,7 +162,8 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00088, trigg
     #peakcat_name = TCIdentifySources(output_dir+coadd_name.split('/')[-1])
 
     if region not in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']:
-        peakcat_name = 'config/'+region+'_'+wave+'_sourcecat_20201201.fits'
+        peakcat_name = 'config/'+region+'_'+wave+'_sourcecat_20220201.fits'
+        #peakcat_name = 'config/'+region+'_'+wave+'_sourcecat_20201201.fits'
     elif wave == '450':
         peakcat_name = 'config/'+region+'_'+wave+'_sourcecat_20200911.fits'
     elif wave == '850':
@@ -235,6 +239,7 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00088, trigg
 
         # Sourceinfo file:
         # Get most recent file's date for name
+        print('SDFFILES:',input_data)
         mostrecentdate = np.array(input_data)[np.argsort(np.array(input_data))][-1].split('/')[-1].split('_')[1]
         mostrecentscan = np.array(input_data)[np.argsort(np.array(input_data))][-1].split('/')[-1].split('_')[2]
 
@@ -244,7 +249,10 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00088, trigg
             else:
                 sourceinfoname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_Wcal_sourceinfo.txt'
         else:
-            sourceinfoname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_sourceinfo.txt'
+            if GOODBOX:
+                sourceinfoname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_GoodMaps_sourceinfo.txt'
+            else:
+                sourceinfoname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_sourceinfo.txt'
         needtooverwrite= 0
         f    = open(sourceinfoname)
         newf = open('newfile.txt','w')
@@ -289,7 +297,10 @@ def TCTrigger(input_data,protocat,diskcat,region, aperture_diam = 0.00088, trigg
             else:
                 metadataname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_Wcal_metadata.txt'
         else:
-            metadataname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_metadata.txt'
+            if GOODBOX:
+                metadataname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_GoodMaps_metadata.txt'
+            else:
+                metadataname = output_dir+'/'+region+'/'+region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+wave+'_metadata.txt'
         needtooverwrite = 0
         f    = open(metadataname)
         newf = open('newfile.txt','w')

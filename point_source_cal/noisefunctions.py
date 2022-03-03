@@ -65,10 +65,17 @@ def readnoise(filename,region):
                 date_scan.append(eachfile.split('_')[-6]+'_'+eachfile.split('_')[-5])
                 noise.append(eachnoise)
     except TypeError:
-        for eachfile,eachnoise in zip([catalogue['Image']],[catalogue['Noise']]):
-            eachfile = eachfile.decode('utf-8')
-            if eachfile.split('_')[0] == region:
-                date_scan.append(eachfile.split('_')[-6]+'_'+eachfile.split('_')[-5])
-                noise.append(eachnoise)
+        try:
+            for eachfile,eachnoise in zip([catalogue['Image']],[catalogue['Noise']]):
+                eachfile = eachfile.decode('utf-8')
+                if eachfile.split('_')[0] == region:
+                    date_scan.append(eachfile.split('_')[-6]+'_'+eachfile.split('_')[-5])
+                    noise.append(eachnoise)
+        except IndexError:
+           for eachfile,eachnoise in zip([catalogue['Image'].item()],[catalogue['Noise'].item()]):
+                eachfile = eachfile.decode('utf-8')
+                if eachfile.split('_')[0] == region:
+                    date_scan.append(eachfile.split('_')[-6]+'_'+eachfile.split('_')[-5])
+                    noise.append(eachnoise)
 
     return(np.array(date_scan),np.array(noise))

@@ -133,8 +133,12 @@ def TCMetadata(input_data,region,output_dir,wave='850',mjypbmfactor=537000.0,mjy
             fileending = wave+"_Wcal_metadata.txt"
             ind1 =  -6
     else:
-        fileending = wave+"_metadata.txt"
-        ind1 = -5
+        if GOODBOX:
+            fileending = wave+"_GoodMaps_metadata.txt"
+            ind1 = -6
+        else:
+            fileending = wave+"_metadata.txt"
+            ind1 = -5
     existing_metadata_file = sorted(list(glob.glob(output_dir+"/*"+fileending)))
 
     # If we have previously existing data, read in the existing table file
@@ -478,7 +482,10 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
         else:
             fileending = wave+'_Wcal_sourceinfo.txt'
     else:
-        fileending = wave+'_sourceinfo.txt'
+        if GOODBOX:
+            fileending = wave+'_GoodMaps_sourceinfo.txt'
+        else:
+            fileending = wave+'_sourceinfo.txt'
     previous_results_list = sorted(glob.glob(output_dir+'/*'+fileending))
     print('\n\nPrevious Results List\n\n',previous_results_list,'\n\n')
     previous_results_thisregion = []
@@ -583,7 +590,10 @@ def TCTrackSources(input_data,peakcat,region,output_dir,aperture_diam = 0.000833
         else:
             sourcecat_name = output_dir+'/'+region+'_'+wave+'_Wcal_sourcecat.bin'
     else:
-        sourcecat_name = output_dir+'/'+region+'_'+wave+'_sourcecat.bin'
+        if GOODBOX:
+            sourcecat_name = output_dir+'/'+region+'_'+wave+'_GoodMaps_sourcecat.bin'
+        else:
+            sourcecat_name = output_dir+'/'+region+'_'+wave+'_sourcecat.bin'
     pickle.dump(results_dict,open(sourcecat_name,'wb'))
     return(results_dict)
 
@@ -728,7 +738,7 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
 
         # Measure Normalised peak flux (normalised by average) versus days. Get a linear relationship
         # The diagonal elements of cov are the variances of the coefficients in z, i.e. np.sqrt(np.diag(cov)) gives you the standard deviations of the coefficients. You can use the standard deviations to estimate the probability that the absolute error exceeds a certain value, e.g. by inserting the standard deviations in the uncertainty propagation calculation. If you use e.g. 3*standard deviations in the uncertainty propagation, you calculate the error which will not be exceeded in 99.7% of the cases.
-        print('\n\nDATES AND PEAKFLUXES IN LINEAR FIT\n\n',np.array(sorted(source_dict[eachsource]['dates'])),np.array(source_dict[eachsource]['peakfluxes']),'\n\n')
+        #print('\n\nDATES AND PEAKFLUXES IN LINEAR FIT\n\n',np.array(sorted(source_dict[eachsource]['dates'])),np.array(source_dict[eachsource]['peakfluxes']),'\n\n')
         p,cov           = np.polyfit(np.array(sorted(source_dict[eachsource]['dates']))-sorted(source_dict[eachsource]['dates'])[0],np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]/np.nanmean(np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]),1,cov=True,full=False)
 
         slope                = p[0]
@@ -903,7 +913,10 @@ def TCCheck4Variables(source_dict,YSOtable,region,trigger_thresh = 5,brightness_
         else:
             fileending = wave+'_Wcal_sourceinfo.txt'
     else:
-        fileending = wave+'_sourceinfo.txt'
+        if GOODBOX:
+            fileending = wave+'_GoodMaps_sourceinfo.txt'
+        else:
+            fileending = wave+'_sourceinfo.txt'
     apascii.write(t,region+'_'+mostrecentdate+'_'+mostrecentscan+'_'+fileending)
 
     return(t,triggered_sources)
