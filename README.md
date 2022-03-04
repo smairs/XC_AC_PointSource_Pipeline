@@ -23,7 +23,9 @@ To begin, create directories for each region with the names:
 Populate each directory with all the **850 micron** images you would like to process from the R3 directory on VOspace: (Example: DR21C_*_850_ER3.sdf)
 The 450 images will be created automatically from the 850 micron names, so no need to place the 450 micron data in the directories, above.
 
-Ensure an up-to-date Starlink installation is running on the computer.
+Ensure an up-to-date Starlink installation is running on the computer and all python modules listed in "python_modules_necessary" are functional.
+
+Ensure the external mask files *ext*sdf are in the main directory that contains all the region folders.
 
 *Note: If you have already run the pipeline on the full dataset, and you would just like the results for the newest observation, you can simply place
 in these directories:*
