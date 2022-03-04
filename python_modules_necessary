@@ -1,0 +1,21 @@
+starlink -- pip install starlink-pywrapper (note that starlink installation must be installed and ready to go - and the SCUBA-2 FCFs changed in 21A!)
+numpy
+matplotlib
+seaborn
+datetime
+os
+operator
+pickle
+astropy
+itertools
+scipy
+collections
+mpl_toolkits
+glob
+subprocess
+time
+math
+json
+pdb
+pandas
+re
