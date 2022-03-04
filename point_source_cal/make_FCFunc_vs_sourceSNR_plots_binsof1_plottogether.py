@@ -37,7 +37,7 @@ def make_FCFunc_family_plots(region_to_run,wave,date_cutoff,find_new_family=Fals
     
     # Grab the source catalogue derived from the co-add for this region and wavelength
     if region_to_run not in ['IC348','NGC1333','NGC2024','NGC2071','OMC23','OPHCORE','SERPM','SERPS']:
-        sourcecat = cat_dir+region_to_run+'_'+wave+'_sourcecat_20220201.fits'
+        sourcecat = cat_dir+region_to_run+'_'+wave+'_sourcecat_20220303.fits'
     elif wave == '450':
         sourcecat = cat_dir+region_to_run+'_'+wave+'_sourcecat_20200911.fits'
     elif wave == '850':
