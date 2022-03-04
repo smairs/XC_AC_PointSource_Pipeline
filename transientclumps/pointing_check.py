@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 def pointing_check(direc,wave):
 
     sdf_files = sorted(glob.glob(direc+'/*'+wave+'*mJybmsm.sdf'))
+    print('\n\n\n',sdf_files,'\n\n\n')
 
     if wave == '450':
         pix_scale = 2.0
@@ -58,7 +59,7 @@ def pointing_check(direc,wave):
 
         cat_match_name = target_catalogue.split('.FIT')[0]+'_match.FIT'
 
-        print(eachfile,target_catalogue,reference_catalogue,eachfile.split('_00')[0].split('_')[-1],eachfile.split('_00')[-1].split('_')[0])
+        #print(eachfile,target_catalogue,reference_catalogue,eachfile.split('_00')[0].split('_')[-1],eachfile.split('_00')[-1].split('_')[0])
 
         merge_catalog(target_catalogue, reference_catalogue, eachfile.split('_00')[0].split('_')[-1],str(int(eachfile.split('_00')[-1].split('_')[0])), cat_match_name,ref_index=MatchInd,cat_index=TargIndMatched)
 

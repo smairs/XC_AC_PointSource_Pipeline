@@ -13,7 +13,10 @@ def make_coadds_metadata(region,datadir,wave,mjypbmfactor=537000.0,mjyparcsecfac
         else:
             sdffiles = sorted(glob.glob(datadir+'/*'+wave+'*sm_Wcal.sdf'))
     else:
-        sdffiles = sorted(glob.glob(datadir+'/*'+wave+'*sm.sdf'))
+        if goodbox:
+            sdffiles = goodboxfilelist
+        else:
+            sdffiles = sorted(glob.glob(datadir+'/*'+wave+'*sm.sdf'))
         
 
     if wave == '450':

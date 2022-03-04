@@ -12,7 +12,7 @@ def generate_calfactors_file(datadir,region,wave,goodmaps=False):
         GMstring = ''
     previous_file = len(sorted(list(glob.glob(datadir+'/'+region+'_*'+wave+'_CalFactors'+GMstring+'.txt'))))
     if previous_file>0:
-        previous_filename = sorted(list(glob.glob(datadir+'/'+region+'_*'+wave+'_CalFactors'++GMstring+'.txt')))[-1]
+        previous_filename = sorted(list(glob.glob(datadir+'/'+region+'_*'+wave+'_CalFactors'+GMstring+'.txt')))[-1]
     
     # In the following line we should ALWAYS USE 850 -- since the 450 files were generated using 850 pointing corrections
     pointing_file = np.genfromtxt(sorted(glob.glob('tables/Transient_'+region+'_run_*_850.table'))[-2],names=True,dtype=None) # the second-to-last file, since the last file is the final check, not the pointing corrections we used

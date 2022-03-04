@@ -26,7 +26,8 @@ def make_final_lightcurves(source_dict_file,calfactorfile,region,wave,GOODMAPS=F
                     if scan2 == date1[8:]:
                         good_ind.append(dummy)
         
-
+        print(good_ind)
+        print(source_dict_file,calfactorfile)
         dates_to_plot    = np.array(source_dict[eachsource]['dates'])[np.argsort(np.array(source_dict[eachsource]['dates']))]
         uncal_peakfluxes = Wcals[good_ind]*np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]
         cal_peakfluxes   = np.array(source_dict[eachsource]['peakfluxes'])[np.argsort(np.array(source_dict[eachsource]['dates']))]

@@ -357,7 +357,7 @@ if not alignment_ACcalonly:
 
             #print('\nSmoothing Data....')           
  
-            smooth_input_data(most_recent_XC,wave)   
+            #smooth_input_data(most_recent_XC,wave)   
            
             print('\nGenerating Initial Sourceinfo File....')
 
