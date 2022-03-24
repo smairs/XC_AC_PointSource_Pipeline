@@ -31,13 +31,13 @@ import glob
 ###############
 
 # The wavelengths to run. Can be ['850'], ['450'] (IF 850 micron data has already been produced! the 450 micron pipeline relies on that data for the pointing corrections!), or ['850','450']
-waves = ['450']
+waves = ['850']
 
 # List of Regions To Run. Must select from: IC348, NGC1333, NGC2024, NGC2071, OMC23, OPHCORE, SERPM, SERPS, DR21C, DR21N, DR21S, M17, M17SWex, S255
-regions_to_run = ['M17SWex','DR21N','DR21S','M17','DR21C','S255'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
+regions_to_run = ['DR21C','DR21N','DR21S','M17','M17SWex','S255'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
 
 # The directories  micron, ,'NGC2024','SERPM','S255'R3 image,'NGCS2071','OMC23','S255's you would like to process in the same order as the region names above
-datadirs       = ['M17SWex','DR21N','DR21S','M17','DR21C','S255'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
+datadirs       = ['DR21C','DR21N','DR21S','M17','M17SWex','S255'] #['IC348', 'NGC1333', 'NGC2024', 'NGC2071', 'OMC23', 'OPHCORE', 'SERPM', 'SERPS', 'DR21C', 'DR21N', 'DR21S', 'M17', 'M17SWex', 'S255']
 
 
 # Sets the number of XC/AC corrections to iteratively perform
